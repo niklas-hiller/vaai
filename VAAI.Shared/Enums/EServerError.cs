@@ -1,10 +1,9 @@
-﻿namespace VAAI.Shared.Enums
+﻿namespace VAAI.Shared.Enums;
+
+public enum EServerError
 {
-    public enum EServerError
-    {
-        EXISTING_SESSION,
-        UNKNOWN_GROUP,
-        INVALID_GROUP,
-        NO_SESSION,
-    }
+    EXISTING_SESSION,
+    UNKNOWN_GROUP,
+    INVALID_GROUP,
+    NO_SESSION,
 }

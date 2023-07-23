@@ -1,18 +1,17 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using VAAI.Shared.Communication;
 
-namespace VAAI.Server.Services
+namespace VAAI.Server.Services;
+
+public interface ISessionService<T> where T : Hub
 {
-    public interface ISessionService<T> where T : Hub
-    {
-        Task AddSessionAsync(string connectionId, Session session);
-        Task RemoveSessionAsync(string connectionId);
+    Task AddSessionAsync(string connectionId, Session session);
+    Task RemoveSessionAsync(string connectionId);
 
-        bool InGroup(string connectionId, string groupName);
-        bool InGroupAny(string connectionId, string[] groupNames);
-        bool InGroupAll(string connectionId, string[] groupNames);
+    bool InGroup(string connectionId, string groupName);
+    bool InGroupAny(string connectionId, string[] groupNames);
+    bool InGroupAll(string connectionId, string[] groupNames);
 
-        Session? TryGetSession(string connectionId);
-        Session GetSession(string connectionId);
-    }
+    Session? TryGetSession(string connectionId);
+    Session GetSession(string connectionId);
 }

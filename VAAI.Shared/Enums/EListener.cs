@@ -1,9 +1,8 @@
-﻿namespace VAAI.Shared.Enums
+﻿namespace VAAI.Shared.Enums;
+
+public enum EListener
 {
-    public enum EListener
-    {
-        TTS,
-        STT,
-        LLM
-    }
+    TTS,
+    STT,
+    LLM
 }

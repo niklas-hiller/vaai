@@ -39,7 +39,7 @@ public class Client
             Groups.Add(SessionGroups.STT_AI);
         }
 
-        Connection.On <Message<float[]>>(Broadcasts.SpeechToText, async (message) =>
+        Connection.On<Message<float[]>>(Broadcasts.SpeechToText, async (message) =>
         {
             await Connection.SendAsync(Broadcasts.SpeechToTextResult, new Message<string>(message.Id, await func(message)));
         });
