@@ -89,7 +89,7 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.LLM_AI)]
-    public async Task TextToTextFinish(Message message)
+    public async Task TextToTextResult(Message message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2T: {message.Id}");
@@ -103,7 +103,7 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.TTS_AI)]
-    public async Task TextToSpeechFinish(Message message)
+    public async Task TextToSpeechResult(Message message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2S: {message.Id}");
@@ -117,7 +117,7 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.STT_AI)]
-    public async Task SpeechToTextFinish(Message message)
+    public async Task SpeechToTextResult(Message message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished S2T: {message.Id}");
