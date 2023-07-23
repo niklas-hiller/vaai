@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\VAAI.ClientLibrary\VAAI.Library.csproj" />
+    <ProjectReference Include="..\VAAI.Library\VAAI.Library.csproj" />
     <ProjectReference Include="..\VAAI.Shared\VAAI.Shared.csproj" />
   </ItemGroup>
 

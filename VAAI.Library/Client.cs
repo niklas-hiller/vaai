@@ -2,7 +2,7 @@
 using VAAI.Shared.Communication;
 using VAAI.Shared.Enums;
 
-namespace VAAI.ClientLibrary;
+namespace VAAI.Library;
 
 public class Client
 {

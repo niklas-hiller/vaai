@@ -1,4 +1,4 @@
-﻿using VAAI.ClientLibrary;
+﻿using VAAI.Library;
 using Whisper.net;
 using Whisper.net.Ggml;
 

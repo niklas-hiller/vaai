@@ -1,4 +1,4 @@
-﻿using VAAI.ClientLibrary;
+﻿using VAAI.Library;
 
 namespace VAAI.LLM;
 
