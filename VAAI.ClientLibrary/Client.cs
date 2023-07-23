@@ -19,46 +19,46 @@ public class Client
             .Build();
     }
 
-    public void registerTTS(Func<Message, Task<object>> func)
+    public void registerTTS(Func<Message<string>, Task<float[]>> func)
     {
         if (!Groups.Contains(SessionGroups.TTS_AI))
         {
             Groups.Add(SessionGroups.TTS_AI);
         }
 
-        Connection.On<Message>(Broadcasts.TextToSpeech, async (message) =>
+        Connection.On<Message<string>>(Broadcasts.TextToSpeech, async (message) =>
         {
-            await Connection.SendAsync(Broadcasts.TextToSpeechResult, new Message(message.Id, await func(message)));
+            await Connection.SendAsync(Broadcasts.TextToSpeechResult, new Message<float[]>(message.Id, await func(message)));
         });
     }
 
-    public void registerSTT(Func<Message, Task<object>> func)
+    public void registerSTT(Func<Message<float[]>, Task<string>> func)
     {
         if (!Groups.Contains(SessionGroups.STT_AI))
         {
             Groups.Add(SessionGroups.STT_AI);
         }
 
-        Connection.On<Message>(Broadcasts.SpeechToText, async (message) =>
+        Connection.On <Message<float[]>>(Broadcasts.SpeechToText, async (message) =>
         {
-            await Connection.SendAsync(Broadcasts.SpeechToTextResult, new Message(message.Id, await func(message)));
+            await Connection.SendAsync(Broadcasts.SpeechToTextResult, new Message<string>(message.Id, await func(message)));
         });
     }
 
-    public void registerLLM(Func<Message, Task<object>> func)
+    public void registerLLM(Func<Message<string>, Task<string>> func)
     {
         if (!Groups.Contains(SessionGroups.LLM_AI))
         {
             Groups.Add(SessionGroups.LLM_AI);
         }
 
-        Connection.On<Message>(Broadcasts.TextToText, async (message) =>
+        Connection.On<Message<string>>(Broadcasts.TextToText, async (message) =>
         {
-            await Connection.SendAsync(Broadcasts.TextToTextResult, new Message(message.Id, await func(message)));
+            await Connection.SendAsync(Broadcasts.TextToTextResult, new Message<string>(message.Id, await func(message)));
         });
     }
 
-    public void registerListener(Func<Message, Task<object>> func, EListener whichListener)
+    public void registerListener(Func<Message<object>, Task<object>> func, EListener whichListener)
     {
         if (!Groups.Contains(SessionGroups.Listener))
         {
@@ -68,19 +68,19 @@ public class Client
         switch (whichListener)
         {
             case EListener.TTS:
-                Connection.On<Message>(Broadcasts.TextToSpeechResult, async (message) =>
+                Connection.On<Message<object>>(Broadcasts.TextToSpeechResult, async (message) =>
                 {
                     await func(message);
                 });
                 break;
             case EListener.STT:
-                Connection.On<Message>(Broadcasts.SpeechToTextResult, async (message) =>
+                Connection.On<Message<object>>(Broadcasts.SpeechToTextResult, async (message) =>
                 {
                     await func(message);
                 });
                 break;
             case EListener.LLM:
-                Connection.On<Message>(Broadcasts.TextToTextResult, async (message) =>
+                Connection.On<Message<object>>(Broadcasts.TextToTextResult, async (message) =>
                 {
                     await func(message);
                 });
@@ -88,7 +88,7 @@ public class Client
         }
     }
 
-    public void registerInvoker(Func<Message, Task<object>> func)
+    public void registerInvoker(Func<Message<object>, Task<object>> func)
     {
         if (!Groups.Contains(SessionGroups.Invoker))
         {

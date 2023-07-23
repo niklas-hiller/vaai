@@ -33,23 +33,6 @@ public class VAAIHub : Hub
     }
 
     /// <summary>
-    /// Informs all LLM AI sessions to process a given text.
-    /// </summary>
-    /// <param name="text"></param>
-    /// <returns></returns>
-    [GroupFilter(SessionGroups.Invoker)]
-    public async Task<Guid> TextToText(string text)
-    {
-        Message message = new Message(text);
-
-        Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2T: {text}");
-
-        await Clients.Group(SessionGroups.LLM_AI).SendAsync(Broadcasts.TextToText, text);
-        return message.Id;
-    }
-
-    /// <summary>
     /// Informs all TTS AI sessions to process a given text.
     /// </summary>
     /// <param name="text"></param>
@@ -57,7 +40,7 @@ public class VAAIHub : Hub
     [GroupFilter(SessionGroups.Invoker)]
     public async Task<Guid> TextToSpeech(string text)
     {
-        Message message = new Message(text);
+        Message<string> message = new Message<string>(text);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2S: {text}");
@@ -74,7 +57,7 @@ public class VAAIHub : Hub
     [GroupFilter(SessionGroups.Invoker)]
     public async Task<Guid> SpeechToText(float[] samples)
     {
-        Message message = new Message(samples);
+        Message<float[]> message = new Message<float[]>(samples);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests S2T: {samples.Length} Samples");
@@ -84,17 +67,20 @@ public class VAAIHub : Hub
     }
 
     /// <summary>
-    /// Informs all Listener sessions of the result of a LLM AI session.
+    /// Informs all LLM AI sessions to process a given text.
     /// </summary>
-    /// <param name="message"></param>
+    /// <param name="text"></param>
     /// <returns></returns>
-    [GroupFilter(SessionGroups.LLM_AI)]
-    public async Task TextToTextResult(Message message)
+    [GroupFilter(SessionGroups.Invoker)]
+    public async Task<Guid> TextToText(string text)
     {
-        Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2T: {message.Id}");
+        Message<string> message = new Message<string>(text);
 
-        await Clients.Group(SessionGroups.Listener).SendAsync(Broadcasts.TextToTextResult, message);
+        Session session = sessionService.GetSession(Context.ConnectionId);
+        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2T: {text}");
+
+        await Clients.Group(SessionGroups.LLM_AI).SendAsync(Broadcasts.TextToText, text);
+        return message.Id;
     }
 
     /// <summary>
@@ -103,7 +89,7 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.TTS_AI)]
-    public async Task TextToSpeechResult(Message message)
+    public async Task TextToSpeechResult(Message<float[]> message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2S: {message.Id}");
@@ -117,11 +103,25 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.STT_AI)]
-    public async Task SpeechToTextResult(Message message)
+    public async Task SpeechToTextResult(Message<string> message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished S2T: {message.Id}");
 
         await Clients.Group(SessionGroups.Listener).SendAsync(Broadcasts.SpeechToTextResult, message);
+    }
+
+    /// <summary>
+    /// Informs all Listener sessions of the result of a LLM AI session.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    [GroupFilter(SessionGroups.LLM_AI)]
+    public async Task TextToTextResult(Message<string> message)
+    {
+        Session session = sessionService.GetSession(Context.ConnectionId);
+        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2T: {message.Id}");
+
+        await Clients.Group(SessionGroups.Listener).SendAsync(Broadcasts.TextToTextResult, message);
     }
 }
