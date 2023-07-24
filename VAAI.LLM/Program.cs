@@ -7,6 +7,6 @@ internal class Program
     static void Main(string[] args)
     {
         Console.WriteLine("Hello, World!");
-        var client = new Client("Some LLM");
+        var client = new HubClient("Some LLM");
     }
 }

@@ -26,10 +26,9 @@ public class VAAIHub : Hub
     {
         // Add the session to the group name.
         await sessionService.AddSessionAsync(Context.ConnectionId, session);
-        logger.LogInformation($"{session.Name} connected as {string.Join(", ", session.Groups)}");
+        logger.LogInformation($"{session.Name} ({Context.ConnectionId}) connected as {string.Join(", ", session.Groups)}");
 
         await Clients.Caller.SendAsync(Broadcasts.SessionConnect);
-        await Clients.Others.SendAsync(Broadcasts.OtherSessionConnect, session);
     }
 
     /// <summary>

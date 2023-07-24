@@ -15,6 +15,7 @@ public class Program
         builder.Services.AddSignalR(hubOptions =>
         {
             hubOptions.AddFilter<GroupFilter<VAAIHub>>();
+            hubOptions.MaximumReceiveMessageSize = long.MaxValue;
         });
         builder.Services.AddSingleton<GroupFilter<VAAIHub>>();
         builder.Services.AddSingleton<ISessionService<VAAIHub>, SessionService<VAAIHub>>();
