@@ -28,7 +28,7 @@ public class GroupFilter<T> : IHubFilter where T : Hub
         }
 
         var connectionId = invocationContext.Context.ConnectionId;
-        var session = sessionService.TryGetSession(invocationContext.Context.ConnectionId);
+        var session = sessionService.TryGetSession(connectionId);
         if (session == null)
         {
             string message = $"[{EServerError.NO_SESSION}] No active session for the connection ({connectionId}) detected.";

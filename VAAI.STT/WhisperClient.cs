@@ -1,6 +1,10 @@
-﻿using VAAI.Library;
+﻿using System.Linq;
+using VAAI.Library;
+using VAAI.Shared.Communication;
+using VAAI.Shared.Enums;
 using Whisper.net;
 using Whisper.net.Ggml;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace VAAI.STT
 {
@@ -11,6 +15,7 @@ namespace VAAI.STT
         private readonly string Model;
         private readonly string Language;
         private readonly int Threads;
+        private readonly string[] PAUSE = new string[] { "[ Silence ]", "[BLANK_AUDIO]" };
 
         private static async Task DownloadModel(string fileName, GgmlType ggmlType)
         {
@@ -28,23 +33,71 @@ namespace VAAI.STT
             Threads = threads;
         }
 
+        public float[] ConstructParagraph(List<float[]> retainedData)
+        {
+            int totalLength = 0;
+            retainedData.ForEach(data =>
+            {
+                totalLength += data.Length;
+            });
+            float[] paragraphData = new float[totalLength];
+            int index = 0;
+            retainedData.ForEach(data =>
+            {
+                Array.Copy(data, 0, paragraphData, index, data.Length);
+                index += data.Length;
+            });
+
+            return paragraphData;
+        }
+
         private async Task Process(TaskQueue<float[], string> queue)
         {
             var whisperFactory = WhisperFactory.FromPath(Model);
             var processor = whisperFactory.CreateBuilder()
                 .WithLanguage(Language).WithThreads(Threads)
                 .Build();
+            List<float[]> retainedData = new List<float[]>();
             while (true)
             {
-                var now = DateTime.UtcNow;
                 if (queue.HasTasks)
                 {
+                    // Read Input
                     var input = queue.InputQueue.Dequeue();
-                    await foreach (var result in processor.ProcessAsync(input))
+                    List<SegmentData> segments = new List<SegmentData>();
+                    await foreach (var segment in processor.ProcessAsync(input))
                     {
-                        Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+                        segments.Add(segment);
+                        Console.WriteLine($"{segment.Start}->{segment.End}: {segment.Text}");
                     }
-                    queue.OutputQueue.Enqueue("");
+
+                    // Evaluate Result
+                    Result<string> result;
+                    if (segments.All(segment => PAUSE.Any(prompt => segment.Text.Contains(prompt))))
+                    {
+                        if (retainedData.Count > 0)
+                        {
+                            float[] paragraphData = ConstructParagraph(retainedData);
+                            retainedData.Clear();
+                            string text = "";
+                            await foreach (var segment in processor.ProcessAsync(paragraphData))
+                            {
+                                text += segment.Text;
+                            }
+                            result = new Result<string>(EStatus.DONE, text);
+                        }
+                        else
+                        {
+                            result = new Result<string>(EStatus.DROPPED);
+                        }
+                    } 
+                    else
+                    {
+                        retainedData.Add(input);
+                        result = new Result<string>(EStatus.WAIT_FOR_MORE);
+                    }
+
+                    queue.OutputQueue.Enqueue(result);
                 }
             }
         }

@@ -1,12 +1,6 @@
-﻿using NAudio.Wave;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading;
+﻿using Microsoft.Extensions.Logging;
+using NAudio.Wave;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 using VAAI.Library;
 using VAAI.Shared.Enums;
 
@@ -17,11 +11,36 @@ namespace VAAI.Client
         private readonly HubClient Client;
         private readonly int SampleRate;
         private readonly int Channels;
+        private readonly ILogger Logger;
 
-        public AudioClient(int sampleRate, int channels) 
+        public AudioClient(int sampleRate, int channels)
         {
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddFilter("Microsoft", LogLevel.Warning)
+                    .AddFilter("System", LogLevel.Warning)
+                    .AddConsole();
+            });
+            Logger = loggerFactory.CreateLogger<HubClient>();
+
             Client = new HubClient("Client");
             Client.registerInvoker();
+            Client.registerListener<string>(EListener.STT, async (message) =>
+            {
+                switch (message.Content.Status)
+                {
+                    case EStatus.DROPPED:
+                        Logger.LogInformation($"Listener was informed that a message was dropped. ({message.Id})");
+                        break;
+                    case EStatus.WAIT_FOR_MORE:
+                        Logger.LogInformation($"Listener was informed that STT has to wait for more content. ({message.Id})");
+                        break;
+                    case EStatus.DONE:
+                        Logger.LogInformation($"Listener was informed that STT finished work ({message.Id}): {message.Content.Content}");
+                        break;
+                }
+            });
 
             SampleRate = sampleRate;
             Channels = channels;
@@ -54,7 +73,7 @@ namespace VAAI.Client
             _ = RecordMicrophoneAsync(audioChannel, cancellationToken);
             try
             {
-                var recordSeconds = 5;
+                var recordSeconds = 3;
                 var sampleSize = SampleRate * recordSeconds;
                 var samples = new float[sampleSize];
                 var currentIndex = 0;

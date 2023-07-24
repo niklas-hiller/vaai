@@ -3,6 +3,8 @@ using System.Net.Sockets;
 using VAAI.Server.Filters;
 using VAAI.Server.Services;
 using VAAI.Shared.Communication;
+using VAAI.Shared.Enums;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace VAAI.Server.Hubs;
 
@@ -44,7 +46,7 @@ public class VAAIHub : Hub
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2S: {text}");
 
-        await Clients.Group(SessionGroups.TTS_AI).SendAsync(Broadcasts.TextToSpeech, text);
+        await Clients.Group(SessionGroups.TTS_AI).SendAsync(Broadcasts.TextToSpeech, message);
         return message.Id;
     }
 
@@ -78,7 +80,7 @@ public class VAAIHub : Hub
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2T: {text}");
 
-        await Clients.Group(SessionGroups.LLM_AI).SendAsync(Broadcasts.TextToText, text);
+        await Clients.Group(SessionGroups.LLM_AI).SendAsync(Broadcasts.TextToText, message);
         return message.Id;
     }
 
@@ -88,10 +90,24 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.TTS_AI)]
-    public async Task TextToSpeechResult(Message<float[]> message)
+    public async Task TextToSpeechResult(Message<Result<float[]>> message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2S: {message.Id}");
+        switch (message.Content.Status)
+        {
+            case EStatus.DROPPED:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) dropped T2S ({message.Id})");
+                break;
+            case EStatus.WAIT_FOR_MORE:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) waits for more data to T2S ({message.Id})");
+                break;
+            case EStatus.DONE:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2S ({message.Id})");
+                break;
+            default:
+                logger.LogWarning($"{session.Name} ({string.Join(", ", session.Groups)}) has unexpected status for T2S ({message.Id})");
+                break;
+        }
 
         await Clients.Group(SessionGroups.Listener).SendAsync(Broadcasts.TextToSpeechResult, message);
     }
@@ -102,10 +118,21 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.STT_AI)]
-    public async Task SpeechToTextResult(Message<string> message)
+    public async Task SpeechToTextResult(Message<Result<string>> message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished S2T: {message.Id}");
+        switch (message.Content.Status)
+        {
+            case EStatus.DROPPED:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) dropped S2T ({message.Id})");
+                break;
+            case EStatus.WAIT_FOR_MORE:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) waits for more data to S2T ({message.Id})");
+                break;
+            case EStatus.DONE:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished S2T ({message.Id}): {message.Content.Content}");
+                break;
+        }
 
         await Clients.Group(SessionGroups.Listener).SendAsync(Broadcasts.SpeechToTextResult, message);
     }
@@ -116,10 +143,24 @@ public class VAAIHub : Hub
     /// <param name="message"></param>
     /// <returns></returns>
     [GroupFilter(SessionGroups.LLM_AI)]
-    public async Task TextToTextResult(Message<string> message)
+    public async Task TextToTextResult(Message<Result<string>> message)
     {
         Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2T: {message.Id}");
+        switch (message.Content.Status)
+        {
+            case EStatus.DROPPED:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) dropped T2T ({message.Id})");
+                break;
+            case EStatus.WAIT_FOR_MORE:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) waits for more data to T2T ({message.Id})");
+                break;
+            case EStatus.DONE:
+                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2T ({message.Id})");
+                break;
+            default:
+                logger.LogWarning($"{session.Name} ({string.Join(", ", session.Groups)}) has unexpected status for T2T ({message.Id})");
+                break;
+        }
 
         await Clients.Group(SessionGroups.Listener).SendAsync(Broadcasts.TextToTextResult, message);
     }

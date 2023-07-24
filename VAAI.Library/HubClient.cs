@@ -87,7 +87,6 @@ public class HubClient
         {
             while (true)
             {
-                //logger.LogInformation("Test");
                 if (messageQueue.HasFinishedTasks)
                 {
                     await Connection.SendAsync(Broadcasts.SpeechToTextResult, messageQueue.Dequeue());
@@ -125,7 +124,7 @@ public class HubClient
         return messageQueue.Tasks;
     }
 
-    public void registerListener(EListener whichListener, Func<Message<object>, Task<object>> func)
+    public void registerListener<T>(EListener whichListener, Func<Message<Result<T>>, Task> func)
     {
         if (!Groups.Contains(SessionGroups.Listener))
         {
@@ -136,19 +135,19 @@ public class HubClient
         switch (whichListener)
         {
             case EListener.TTS:
-                Connection.On<Message<object>>(Broadcasts.TextToSpeechResult, async (message) =>
+                Connection.On<Message<Result<T>>>(Broadcasts.TextToSpeechResult, async (message) =>
                 {
                     await func(message);
                 });
                 break;
             case EListener.STT:
-                Connection.On<Message<object>>(Broadcasts.SpeechToTextResult, async (message) =>
+                Connection.On<Message<Result<T>>>(Broadcasts.SpeechToTextResult, async (message) =>
                 {
                     await func(message);
                 });
                 break;
             case EListener.LLM:
-                Connection.On<Message<object>>(Broadcasts.TextToTextResult, async (message) =>
+                Connection.On<Message<Result<T>>>(Broadcasts.TextToTextResult, async (message) =>
                 {
                     await func(message);
                 });

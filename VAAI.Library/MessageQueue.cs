@@ -14,9 +14,9 @@ namespace VAAI.Library
             Tasks.InputQueue.Enqueue(message.Content);
         }
 
-        public Message<T2> Dequeue()
+        public Message<Result<T2>> Dequeue()
         {
-            return new Message<T2>(Queue.Dequeue(), Tasks.OutputQueue.Dequeue());
+            return new Message<Result<T2>>(Queue.Dequeue(), Tasks.OutputQueue.Dequeue());
         }
     }
 }
