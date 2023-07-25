@@ -48,6 +48,11 @@ public class HubClient
 
     public TaskQueue<string, float[]> registerTTS()
     {
+        if (IsActive)
+        {
+            throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
+        }
+
         if (Groups.Contains(SessionGroups.TTS_AI))
         {
             throw new NotSupportedException($"You can't register the {SessionGroups.TTS_AI} multiple times.");
@@ -74,6 +79,11 @@ public class HubClient
 
     public TaskQueue<float[], string> registerSTT()
     {
+        if (IsActive)
+        {
+            throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
+        }
+
         if (Groups.Contains(SessionGroups.STT_AI))
         {
             throw new NotSupportedException($"You can't register the {SessionGroups.STT_AI} multiple times.");
@@ -100,6 +110,11 @@ public class HubClient
 
     public TaskQueue<string, string> registerLLM()
     {
+        if (IsActive)
+        {
+            throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
+        }
+
         if (Groups.Contains(SessionGroups.LLM_AI))
         {
             throw new NotSupportedException($"You can't register the {SessionGroups.LLM_AI} multiple times.");
@@ -124,65 +139,36 @@ public class HubClient
         return messageQueue.Tasks;
     }
 
-    public void registerListener<T>(EListener whichListener, Func<Message<Result<T>>, Task> func)
+    public Listener registerListener()
     {
+        if (IsActive)
+        {
+            throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
+        }
+
         if (!Groups.Contains(SessionGroups.Listener))
         {
             logger.LogDebug($"Register Hub Client as Listener.");
             Groups.Add(SessionGroups.Listener);
         }
 
-        switch (whichListener)
-        {
-            case EListener.TTS:
-                Connection.On<Message<Result<T>>>(Broadcasts.TextToSpeechResult, async (message) =>
-                {
-                    await func(message);
-                });
-                break;
-            case EListener.STT:
-                Connection.On<Message<Result<T>>>(Broadcasts.SpeechToTextResult, async (message) =>
-                {
-                    await func(message);
-                });
-                break;
-            case EListener.LLM:
-                Connection.On<Message<Result<T>>>(Broadcasts.TextToTextResult, async (message) =>
-                {
-                    await func(message);
-                });
-                break;
-        }
+        return new Listener(this);
     }
 
-    public void registerInvoker()
+    public Invoker registerInvoker()
     {
+        if (IsActive)
+        {
+            throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
+        }
+
         if (!Groups.Contains(SessionGroups.Invoker))
         {
             logger.LogDebug($"Register Hub Client as Invoker.");
             Groups.Add(SessionGroups.Invoker);
         }
-    }
 
-    public async Task<Guid> InvokeTTS(string message)
-    {
-        var id = await Connection.InvokeAsync<Guid>(Broadcasts.TextToSpeech, message);
-        logger.LogDebug($"Invoked TTS {id}");
-        return id;
-    }
-
-    public async Task<Guid> InvokeSTT(float[] samples)
-    {
-        var id = await Connection.InvokeAsync<Guid>(Broadcasts.SpeechToText, samples);
-        logger.LogDebug($"Invoked STT {id}");
-        return id;
-    }
-
-    public async Task<Guid> InvokeLLM(string message)
-    {
-        var id = await Connection.InvokeAsync<Guid>(Broadcasts.TextToText, message);
-        logger.LogDebug($"Invoked LLM {id}");
-        return id;
+        return new Invoker(this);
     }
 
     public async Task StartAsync()

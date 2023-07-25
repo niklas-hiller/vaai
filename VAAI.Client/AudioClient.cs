@@ -12,6 +12,8 @@ namespace VAAI.Client
         private readonly int SampleRate;
         private readonly int Channels;
         private readonly ILogger Logger;
+        private readonly Invoker Invoker;
+        private readonly Listener Listener;
 
         public AudioClient(int sampleRate, int channels)
         {
@@ -25,8 +27,9 @@ namespace VAAI.Client
             Logger = loggerFactory.CreateLogger<HubClient>();
 
             Client = new HubClient("Client");
-            Client.registerInvoker();
-            Client.registerListener<string>(EListener.STT, async (message) =>
+            Invoker = Client.registerInvoker();
+            Listener = Client.registerListener();
+            Listener.OnSTT(async (message) =>
             {
                 switch (message.Content.Status)
                 {
@@ -60,7 +63,7 @@ namespace VAAI.Client
 
             waveIn.StartRecording();
 
-            await Task.Delay(Timeout.Infinite, cancellationToken);
+            await Task.Delay(-1);
 
             waveIn.StopRecording();
         }
@@ -69,40 +72,43 @@ namespace VAAI.Client
         {
             await Client.StartAsync();
 
-            var audioChannel = Channel.CreateUnbounded<byte[]>();
-            _ = RecordMicrophoneAsync(audioChannel, cancellationToken);
-            try
+            _ = Task.Run(async () =>
             {
-                var recordSeconds = 3;
-                var sampleSize = SampleRate * recordSeconds;
-                var samples = new float[sampleSize];
-                var currentIndex = 0;
-
-                await foreach (var buffer in audioChannel.Reader.ReadAllAsync(cancellationToken))
+                var audioChannel = Channel.CreateUnbounded<byte[]>();
+                _ = RecordMicrophoneAsync(audioChannel, cancellationToken);
+                try
                 {
-                    for (int i = 0; i < buffer.Length; i += 2)
+                    var recordSeconds = 3;
+                    var sampleSize = SampleRate * recordSeconds;
+                    var samples = new float[sampleSize];
+                    var currentIndex = 0;
+
+                    await foreach (var buffer in audioChannel.Reader.ReadAllAsync(cancellationToken))
                     {
-                        var sampleValue = BitConverter.ToInt16(buffer, i) / Channels / (float)short.MaxValue;
-                        samples[currentIndex] = sampleValue;
-
-                        currentIndex++;
-                        if (currentIndex >= sampleSize)
+                        for (int i = 0; i < buffer.Length; i += 2)
                         {
-                            var id = await Client.InvokeSTT(samples);
+                            var sampleValue = BitConverter.ToInt16(buffer, i) / Channels / (float)short.MaxValue;
+                            samples[currentIndex] = sampleValue;
 
-                            currentIndex = 0;
+                            currentIndex++;
+                            if (currentIndex >= sampleSize)
+                            {
+                                var id = await Invoker.InvokeSTT(samples);
+
+                                currentIndex = 0;
+                            }
                         }
                     }
                 }
-            }
-            catch (OperationCanceledException e)
-            {
-                Console.WriteLine($"Error: {e.Message}");
-            }
-            finally
-            {
-                audioChannel.Writer.Complete();
-            }
+                catch (OperationCanceledException e)
+                {
+                    Console.WriteLine($"Error: {e.Message}");
+                }
+                finally
+                {
+                    audioChannel.Writer.Complete();
+                }
+            });
         }
     }
 }
