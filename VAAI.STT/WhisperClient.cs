@@ -86,13 +86,13 @@ namespace VAAI.STT
                         }
                         else
                         {
-                            result = new Result<string>(EStatus.DROPPED);
+                            result = new Result<string>(EStatus.DROPPED, "");
                         }
                     }
                     else
                     {
                         retainedData.Add(input);
-                        result = new Result<string>(EStatus.WAIT_FOR_MORE);
+                        result = new Result<string>(EStatus.WAIT_FOR_MORE, "");
                     }
 
                     queue.OutputQueue.Enqueue(result);
