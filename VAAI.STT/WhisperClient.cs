@@ -10,7 +10,6 @@ internal class WhisperClient
 {
     private const string CLIENT_NAME = "Whisper";
     private const string MODELS_PATH = "";
-    private readonly string Model;
     private readonly string Language;
     private readonly int Threads;
     private readonly string[] PAUSE = new string[] { "[ Silence ]", "[BLANK_AUDIO]" };
@@ -28,11 +27,16 @@ internal class WhisperClient
     public WhisperClient(GgmlType ggmlType, string language, int threads)
     {
         string modelName = Enum.GetNames(typeof(GgmlType))[(int)ggmlType];
-        Model = $"{MODELS_PATH}ggml-{modelName.ToLower()}.bin";
+        string modelPath= $"{MODELS_PATH}ggml-{modelName.ToLower()}.bin";
+        if (!File.Exists(modelPath))
+        {
+            Task.Run(async() => await DownloadModel(modelPath, ggmlType)).Wait();
+        }
+
         Language = language;
         Threads = threads;
 
-        var whisperFactory = WhisperFactory.FromPath(Model);
+        var whisperFactory = WhisperFactory.FromPath(modelPath);
         Processor = whisperFactory.CreateBuilder()
             .WithLanguage(Language).WithThreads(Threads)
             .Build();
@@ -101,11 +105,6 @@ internal class WhisperClient
 
     public async Task StartAsync()
     {
-        if (!File.Exists(Model))
-        {
-            await DownloadModel(Model, GgmlType.BaseEn);
-        }
-
         var client = new HubClient(CLIENT_NAME);
         var queue = client.RegisterSTT();
         await client.StartAsync();
