@@ -29,7 +29,7 @@ namespace VAAI.Client
             Client = new HubClient("Client");
             Invoker = Client.registerInvoker();
             Listener = Client.registerListener();
-            Listener.OnSTT(async (message) =>
+            Listener.OnSTT((message) =>
             {
                 switch (message.Content.Status)
                 {
