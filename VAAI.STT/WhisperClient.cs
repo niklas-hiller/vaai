@@ -38,7 +38,7 @@ internal class WhisperClient
 
         var whisperFactory = WhisperFactory.FromPath(modelPath);
         Processor = whisperFactory.CreateBuilder()
-            .WithLanguage(Language).WithThreads(Threads)
+            .WithLanguage(Language).WithThreads(Threads).WithNoSpeechThreshold(-1)
             .Build();
     }
 
@@ -66,16 +66,22 @@ internal class WhisperClient
         {
             // Read Input
             var input = queue.InputQueue.Dequeue();
+
+            var noiseLevel = Math.Abs(input.Sum());
+
             List<SegmentData> segments = new();
-            await foreach (var segment in Processor.ProcessAsync(input))
+            if (noiseLevel > 0.2f) 
             {
-                segments.Add(segment);
-                Console.WriteLine($"{segment.Start}->{segment.End}: {segment.Text}");
+                await foreach (var segment in Processor.ProcessAsync(input))
+                {
+                    segments.Add(segment);
+                    Console.WriteLine($"{segment.Start}->{segment.End}: {segment.Text}");
+                }
             }
 
             // Evaluate Result
             Result<string> result;
-            if (segments.All(segment => PAUSE.Any(prompt => segment.Text.Contains(prompt))))
+            if (segments.Count == 0 || segments.All(segment => PAUSE.Any(prompt => segment.Text.Contains(prompt))))
             {
                 if (RetainedData.Count > 0)
                 {
