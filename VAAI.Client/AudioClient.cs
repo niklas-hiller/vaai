@@ -26,7 +26,7 @@ namespace VAAI.Client
             });
             Logger = loggerFactory.CreateLogger<HubClient>();
 
-            Client = new HubClient("Client");
+            Client = new HubClient("NAudio");
             Invoker = Client.registerInvoker();
             Listener = Client.registerListener();
             Listener.OnSTT((message) =>

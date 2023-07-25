@@ -16,13 +16,14 @@ public class GroupFilter<T> : IHubFilter where T : Hub
         this.sessionService = sessionService;
     }
 
-    public async ValueTask<object> InvokeMethodAsync(HubInvocationContext invocationContext, Func<HubInvocationContext, ValueTask<object>> next)
+    public async ValueTask<object?> InvokeMethodAsync(HubInvocationContext invocationContext, Func<HubInvocationContext, ValueTask<object?>> next)
     {
-        var groupFilter = (GroupFilterAttribute)Attribute.GetCustomAttribute(invocationContext.HubMethod, typeof(GroupFilterAttribute));
+        var groupFilter = Attribute.GetCustomAttribute(invocationContext.HubMethod, typeof(GroupFilterAttribute));
         if (groupFilter == null)
         {
             return await next(invocationContext);
         }
+        var groups = ((GroupFilterAttribute)groupFilter).Groups;
 
         var connectionId = invocationContext.Context.ConnectionId;
         var session = sessionService.TryGetSession(connectionId);
@@ -32,9 +33,9 @@ public class GroupFilter<T> : IHubFilter where T : Hub
             logger.LogError(message);
             throw new HubException(message);
         }
-        if (!sessionService.InGroupAny(invocationContext.Context.ConnectionId, groupFilter.Groups))
+        if (!sessionService.InGroupAny(invocationContext.Context.ConnectionId, groups))
         {
-            string message = $"[{EServerError.INVALID_GROUP}] {session.Name} is not part of permitted groups: {groupFilter.Groups}";
+            string message = $"[{EServerError.INVALID_GROUP}] {session.Name} is not part of permitted groups: {groups}";
             logger.LogError(message);
             throw new HubException(message);
         }
@@ -48,7 +49,7 @@ public class GroupFilter<T> : IHubFilter where T : Hub
         return next(context);
     }
 
-    public Task OnDisconnectedAsync(HubLifetimeContext context, Exception? exception, Func<HubLifetimeContext, Exception, Task> next)
+    public Task OnDisconnectedAsync(HubLifetimeContext context, Exception? exception, Func<HubLifetimeContext, Exception?, Task> next)
     {
         logger.LogInformation($"Connection abolished to {context.Context.ConnectionId}.");
         if (exception != null)
