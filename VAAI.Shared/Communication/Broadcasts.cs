@@ -4,7 +4,6 @@ public static class Broadcasts
 {
     // Session Establish
     public const string SessionConnect = "SessionConnect";
-    public const string OtherSessionConnect = "OtherSessionConnect";
 
     // Invoker -> AI
     public const string SpeechToText = "SpeechToText";

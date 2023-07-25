@@ -4,7 +4,6 @@ using VAAI.Server.Filters;
 using VAAI.Server.Services;
 using VAAI.Shared.Communication;
 using VAAI.Shared.Enums;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace VAAI.Server.Hubs;
 
@@ -28,7 +27,7 @@ public class VAAIHub : Hub
     {
         // Add the session to the group name.
         await sessionService.AddSessionAsync(Context.ConnectionId, session);
-        logger.LogInformation($"{session.Name} ({Context.ConnectionId}) connected as {string.Join(", ", session.Groups)}");
+        logger.LogDebug($"{session.Name} ({Context.ConnectionId}) connected as {string.Join(", ", session.Groups)}");
 
         await Clients.Caller.SendAsync(Broadcasts.SessionConnect);
     }
@@ -104,9 +103,6 @@ public class VAAIHub : Hub
             case EStatus.DONE:
                 logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2S ({message.Id})");
                 break;
-            default:
-                logger.LogWarning($"{session.Name} ({string.Join(", ", session.Groups)}) has unexpected status for T2S ({message.Id})");
-                break;
         }
 
         await Clients.Group(SessionGroups.Listener).SendAsync(Broadcasts.TextToSpeechResult, message);
@@ -156,9 +152,6 @@ public class VAAIHub : Hub
                 break;
             case EStatus.DONE:
                 logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2T ({message.Id})");
-                break;
-            default:
-                logger.LogWarning($"{session.Name} ({string.Join(", ", session.Groups)}) has unexpected status for T2T ({message.Id})");
                 break;
         }
 

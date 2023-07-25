@@ -1,10 +1,8 @@
-﻿using System.Linq;
-using VAAI.Library;
+﻿using VAAI.Library;
 using VAAI.Shared.Communication;
 using VAAI.Shared.Enums;
 using Whisper.net;
 using Whisper.net.Ggml;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace VAAI.STT
 {
@@ -90,7 +88,7 @@ namespace VAAI.STT
                         {
                             result = new Result<string>(EStatus.DROPPED);
                         }
-                    } 
+                    }
                     else
                     {
                         retainedData.Add(input);

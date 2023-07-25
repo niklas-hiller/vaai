@@ -35,7 +35,7 @@ public class HubClient
         {
             _ = Task.Run(async () =>
             {
-                logger.LogInformation("Successfully created session.");
+                logger.LogInformation("Successfully connected to Hub.");
                 AsyncTasks.ForEach((task) =>
                 {
                     task.Start();
@@ -52,7 +52,7 @@ public class HubClient
         {
             throw new NotSupportedException($"You can't register the {SessionGroups.TTS_AI} multiple times.");
         }
-        logger.LogInformation($"Register Hub Client as TTS AI.");
+        logger.LogDebug($"Register Hub Client as TTS AI.");
         Groups.Add(SessionGroups.TTS_AI);
 
         var messageQueue = new MessageQueue<string, float[]>();
@@ -78,7 +78,7 @@ public class HubClient
         {
             throw new NotSupportedException($"You can't register the {SessionGroups.STT_AI} multiple times.");
         }
-        logger.LogInformation($"Register Hub Client as STT AI.");
+        logger.LogDebug($"Register Hub Client as STT AI.");
         Groups.Add(SessionGroups.STT_AI);
 
         var messageQueue = new MessageQueue<float[], string>();
@@ -104,7 +104,7 @@ public class HubClient
         {
             throw new NotSupportedException($"You can't register the {SessionGroups.LLM_AI} multiple times.");
         }
-        logger.LogInformation($"Register Hub Client as LLM AI.");
+        logger.LogDebug($"Register Hub Client as LLM AI.");
         Groups.Add(SessionGroups.LLM_AI);
 
         var messageQueue = new MessageQueue<string, string>();
@@ -128,7 +128,7 @@ public class HubClient
     {
         if (!Groups.Contains(SessionGroups.Listener))
         {
-            logger.LogInformation($"Register Hub Client as Listener.");
+            logger.LogDebug($"Register Hub Client as Listener.");
             Groups.Add(SessionGroups.Listener);
         }
 
@@ -159,7 +159,7 @@ public class HubClient
     {
         if (!Groups.Contains(SessionGroups.Invoker))
         {
-            logger.LogInformation($"Register Hub Client as Invoker.");
+            logger.LogDebug($"Register Hub Client as Invoker.");
             Groups.Add(SessionGroups.Invoker);
         }
     }
@@ -167,21 +167,21 @@ public class HubClient
     public async Task<Guid> InvokeTTS(string message)
     {
         var id = await Connection.InvokeAsync<Guid>(Broadcasts.TextToSpeech, message);
-        logger.LogInformation($"Invoked TTS {id}");
+        logger.LogDebug($"Invoked TTS {id}");
         return id;
     }
 
     public async Task<Guid> InvokeSTT(float[] samples)
     {
         var id = await Connection.InvokeAsync<Guid>(Broadcasts.SpeechToText, samples);
-        logger.LogInformation($"Invoked STT {id}");
+        logger.LogDebug($"Invoked STT {id}");
         return id;
     }
 
     public async Task<Guid> InvokeLLM(string message)
     {
         var id = await Connection.InvokeAsync<Guid>(Broadcasts.TextToText, message);
-        logger.LogInformation($"Invoked LLM {id}");
+        logger.LogDebug($"Invoked LLM {id}");
         return id;
     }
 
@@ -189,9 +189,12 @@ public class HubClient
     {
         _ = Task.Run(async () =>
         {
-            logger.LogInformation("Starting Hub Client...");
+            var session = new Session(this.Name, this.Groups.ToArray());
+            logger.LogInformation($"Establishing connection to Hub as {session.Name} ({string.Join(", ", session.Groups)}).");
+
             await Connection.StartAsync();
-            await Connection.SendAsync(Broadcasts.SessionConnect, new Session(this.Name, this.Groups.ToArray()));
+            await Connection.SendAsync(Broadcasts.SessionConnect, session);
+
             await Task.Delay(-1);
         });
 

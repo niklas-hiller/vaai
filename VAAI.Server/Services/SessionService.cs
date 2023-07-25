@@ -32,11 +32,13 @@ public class SessionService<T> : ISessionService<T> where T : Hub
             throw new HubException(message);
         }
 
-        foreach(var group in session.Groups)
+        foreach (var group in session.Groups)
         {
             await hubContext.Groups.AddToGroupAsync(connectionId, group);
         }
         Sessions[connectionId] = session;
+
+        logger.LogInformation($"Added session for {connectionId} as {session.Name} ({string.Join(", ", session.Groups)})");
     }
 
     public async Task RemoveSessionAsync(string connectionId)
@@ -49,11 +51,13 @@ public class SessionService<T> : ISessionService<T> where T : Hub
         }
 
         Session session = Sessions[connectionId];
-        foreach(var group in session.Groups)
+        foreach (var group in session.Groups)
         {
             await hubContext.Groups.RemoveFromGroupAsync(connectionId, group);
         }
         Sessions.Remove(connectionId);
+
+        logger.LogInformation($"Removed session of {connectionId} as {session.Name} ({string.Join(", ", session.Groups)})");
     }
 
     public bool InGroup(string connectionId, string groupName)

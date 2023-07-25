@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
-using System;
 using VAAI.Server.Hubs;
 using VAAI.Server.Services;
-using VAAI.Shared.Communication;
 using VAAI.Shared.Enums;
 
 namespace VAAI.Server.Filters;
@@ -45,14 +42,12 @@ public class GroupFilter<T> : IHubFilter where T : Hub
         return await next(invocationContext);
     }
 
-    // Optional method
     public Task OnConnectedAsync(HubLifetimeContext context, Func<HubLifetimeContext, Task> next)
     {
         logger.LogInformation($"New connection established to {context.Context.ConnectionId}.");
         return next(context);
     }
 
-    // Optional method
     public Task OnDisconnectedAsync(HubLifetimeContext context, Exception? exception, Func<HubLifetimeContext, Exception, Task> next)
     {
         logger.LogInformation($"Connection abolished to {context.Context.ConnectionId}.");
@@ -60,6 +55,7 @@ public class GroupFilter<T> : IHubFilter where T : Hub
         {
             logger.LogError(exception.Message);
         }
+        sessionService.RemoveSessionAsync(context.Context.ConnectionId);
         return next(context, exception);
     }
 }
