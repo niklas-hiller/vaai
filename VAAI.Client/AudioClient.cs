@@ -27,8 +27,8 @@ namespace VAAI.Client
             Logger = loggerFactory.CreateLogger<HubClient>();
 
             Client = new HubClient("NAudio");
-            Invoker = Client.registerInvoker();
-            Listener = Client.registerListener();
+            Invoker = Client.RegisterInvoker();
+            Listener = Client.RegisterListener();
             Listener.OnSTT((message) =>
             {
                 switch (message.Content.Status)
@@ -49,7 +49,7 @@ namespace VAAI.Client
             Channels = channels;
         }
 
-        public async Task RecordMicrophoneAsync(Channel<byte[]> audioChannel, CancellationToken cancellationToken)
+        public async Task RecordMicrophoneAsync(Channel<byte[]> audioChannel)
         {
             using var waveIn = new WaveInEvent();
             waveIn.WaveFormat = new WaveFormat(SampleRate, Channels);
@@ -75,7 +75,7 @@ namespace VAAI.Client
             _ = Task.Run(async () =>
             {
                 var audioChannel = Channel.CreateUnbounded<byte[]>();
-                _ = RecordMicrophoneAsync(audioChannel, cancellationToken);
+                _ = RecordMicrophoneAsync(audioChannel);
                 try
                 {
                     var recordSeconds = 3;
@@ -108,7 +108,7 @@ namespace VAAI.Client
                 {
                     audioChannel.Writer.Complete();
                 }
-            });
+            }, cancellationToken);
         }
     }
 }

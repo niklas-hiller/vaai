@@ -46,7 +46,7 @@ public class HubClient
         });
     }
 
-    public TaskQueue<string, float[]> registerTTS()
+    public TaskQueue<string, float[]> RegisterTTS()
     {
         if (IsActive)
         {
@@ -77,7 +77,7 @@ public class HubClient
         return messageQueue.Tasks;
     }
 
-    public TaskQueue<float[], string> registerSTT()
+    public TaskQueue<float[], string> RegisterSTT()
     {
         if (IsActive)
         {
@@ -108,7 +108,7 @@ public class HubClient
         return messageQueue.Tasks;
     }
 
-    public TaskQueue<string, string> registerLLM()
+    public TaskQueue<string, string> RegisterLLM()
     {
         if (IsActive)
         {
@@ -139,7 +139,7 @@ public class HubClient
         return messageQueue.Tasks;
     }
 
-    public Listener registerListener()
+    public Listener RegisterListener()
     {
         if (IsActive)
         {
@@ -155,7 +155,7 @@ public class HubClient
         return new Listener(this);
     }
 
-    public Invoker registerInvoker()
+    public Invoker RegisterInvoker()
     {
         if (IsActive)
         {

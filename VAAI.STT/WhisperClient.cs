@@ -31,7 +31,7 @@ namespace VAAI.STT
             Threads = threads;
         }
 
-        public float[] ConstructParagraph(List<float[]> retainedData)
+        public static float[] ConstructParagraph(List<float[]> retainedData)
         {
             int totalLength = 0;
             retainedData.ForEach(data =>
@@ -55,14 +55,14 @@ namespace VAAI.STT
             var processor = whisperFactory.CreateBuilder()
                 .WithLanguage(Language).WithThreads(Threads)
                 .Build();
-            List<float[]> retainedData = new List<float[]>();
+            List<float[]> retainedData = new();
             while (true)
             {
                 if (queue.HasTasks)
                 {
                     // Read Input
                     var input = queue.InputQueue.Dequeue();
-                    List<SegmentData> segments = new List<SegmentData>();
+                    List<SegmentData> segments = new();
                     await foreach (var segment in processor.ProcessAsync(input))
                     {
                         segments.Add(segment);
@@ -108,7 +108,7 @@ namespace VAAI.STT
             }
 
             var client = new HubClient(CLIENT_NAME);
-            var queue = client.registerSTT();
+            var queue = client.RegisterSTT();
             await client.StartAsync();
 
             await Process(queue);

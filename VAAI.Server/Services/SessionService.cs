@@ -9,7 +9,7 @@ public class SessionService<T> : ISessionService<T> where T : Hub
     private readonly ILogger logger;
     private readonly IHubContext<T> hubContext;
 
-    private Dictionary<string, Session> Sessions = new();
+    private readonly Dictionary<string, Session> Sessions = new();
 
     public SessionService(ILogger<SessionService<T>> logger, IHubContext<T> hubContext)
     {

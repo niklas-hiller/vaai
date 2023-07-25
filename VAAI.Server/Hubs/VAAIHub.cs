@@ -40,7 +40,7 @@ public class VAAIHub : Hub
     [GroupFilter(SessionGroups.Invoker)]
     public async Task<Guid> TextToSpeech(string text)
     {
-        Message<string> message = new Message<string>(text);
+        Message<string> message = new(text);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2S: {text}");
@@ -57,7 +57,7 @@ public class VAAIHub : Hub
     [GroupFilter(SessionGroups.Invoker)]
     public async Task<Guid> SpeechToText(float[] samples)
     {
-        Message<float[]> message = new Message<float[]>(samples);
+        Message<float[]> message = new(samples);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests S2T: {samples.Length} Samples");
@@ -74,7 +74,7 @@ public class VAAIHub : Hub
     [GroupFilter(SessionGroups.Invoker)]
     public async Task<Guid> TextToText(string text)
     {
-        Message<string> message = new Message<string>(text);
+        Message<string> message = new(text);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
         logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2T: {text}");

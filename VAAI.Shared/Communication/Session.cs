@@ -8,7 +8,7 @@ public class Session
     public Session()
     {
         Name = "";
-        Groups = new string[0];
+        Groups = Array.Empty<string>();
     }
 
     public Session(string name, string[] groups)
