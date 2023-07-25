@@ -93,7 +93,9 @@ namespace VAAI.Client
                             currentIndex++;
                             if (currentIndex >= sampleSize)
                             {
-                                var id = await Invoker.InvokeSTT(samples);
+                                var sampleCopy = new float[sampleSize];
+                                Array.Copy(samples, sampleCopy, sampleSize);
+                                var id = await Invoker.InvokeSTT(sampleCopy);
 
                                 currentIndex = 0;
                             }
