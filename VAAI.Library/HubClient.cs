@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 using VAAI.Shared.Communication;
-using VAAI.Shared.Enums;
 
 namespace VAAI.Library;
 
@@ -62,17 +61,13 @@ public class HubClient
 
         var messageQueue = new MessageQueue<string, float[]>();
         Connection.On<Message<string>>(Broadcasts.TextToSpeech, messageQueue.Enqueue);
-        var task = new Task(async () =>
+        messageQueue.Tasks.OnOutputAsync(async (queue) =>
         {
-            while (true)
+            if (queue.HasResults)
             {
-                if (messageQueue.HasFinishedTasks)
-                {
-                    await Connection.SendAsync(Broadcasts.TextToSpeechResult, messageQueue.Dequeue());
-                }
+                await Connection.SendAsync(Broadcasts.TextToSpeechResult, messageQueue.Dequeue());
             }
         });
-        AsyncTasks.Add(task);
 
         return messageQueue.Tasks;
     }
@@ -93,17 +88,13 @@ public class HubClient
 
         var messageQueue = new MessageQueue<float[], string>();
         Connection.On<Message<float[]>>(Broadcasts.SpeechToText, messageQueue.Enqueue);
-        var task = new Task(async () =>
+        messageQueue.Tasks.OnOutputAsync(async (queue) =>
         {
-            while (true)
+            if (queue.HasResults)
             {
-                if (messageQueue.HasFinishedTasks)
-                {
-                    await Connection.SendAsync(Broadcasts.SpeechToTextResult, messageQueue.Dequeue());
-                }
+                await Connection.SendAsync(Broadcasts.SpeechToTextResult, messageQueue.Dequeue());
             }
         });
-        AsyncTasks.Add(task);
 
         return messageQueue.Tasks;
     }
@@ -124,17 +115,13 @@ public class HubClient
 
         var messageQueue = new MessageQueue<string, string>();
         Connection.On<Message<string>>(Broadcasts.TextToText, messageQueue.Enqueue);
-        var task = new Task(async () =>
+        messageQueue.Tasks.OnOutputAsync(async (queue) =>
         {
-            while (true)
+            if (queue.HasResults)
             {
-                if (messageQueue.HasFinishedTasks)
-                {
-                    await Connection.SendAsync(Broadcasts.TextToTextResult, messageQueue.Dequeue());
-                }
+                await Connection.SendAsync(Broadcasts.TextToTextResult, messageQueue.Dequeue());
             }
         });
-        AsyncTasks.Add(task);
 
         return messageQueue.Tasks;
     }

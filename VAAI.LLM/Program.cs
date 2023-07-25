@@ -1,12 +1,7 @@
-﻿using VAAI.Library;
-
-namespace VAAI.LLM;
+﻿namespace VAAI.LLM;
 
 internal class Program
 {
-    static void Main(string[] args)
-    {
-        Console.WriteLine("Hello, World!");
-        var client = new HubClient("Some LLM");
-    }
+    static async Task Main(string[] args)
+        => await new OpenAiClient("gpt-35-turbo").StartAsync();
 }
