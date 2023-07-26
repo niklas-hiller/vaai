@@ -24,7 +24,7 @@ internal class AudioClient
                 .AddFilter("System", LogLevel.Warning)
                 .AddConsole();
         });
-        Logger = loggerFactory.CreateLogger<HubClient>();
+        Logger = loggerFactory.CreateLogger<AudioClient>();
 
         Client = new HubClient("NAudio");
         Invoker = Client.RegisterInvoker();
@@ -49,16 +49,24 @@ internal class AudioClient
         Channels = channels;
     }
 
-    public async Task RecordMicrophoneAsync(Channel<byte[]> audioChannel)
+    public async Task RecordMicrophoneAsync()
     {
         using var waveIn = new WaveInEvent();
         waveIn.WaveFormat = new WaveFormat(SampleRate, Channels);
 
-        waveIn.DataAvailable += (sender, args) =>
+        waveIn.DataAvailable += async (sender, args) =>
         {
+            // Copy buffer to prevent overwrite
             var buffer = new byte[args.BytesRecorded];
             Array.Copy(args.Buffer, buffer, args.BytesRecorded);
-            audioChannel.Writer.TryWrite(buffer);
+
+            // Convert buffer to samples
+            var samples = new float[args.BytesRecorded];
+            for (int i = 0; i < buffer.Length / 2; i++)
+            {
+                samples[i] = BitConverter.ToInt16(buffer, i * 2) / Channels / (float)short.MaxValue;
+            }
+            var id = await Invoker.InvokeSTT(samples);
         };
 
         waveIn.StartRecording();
@@ -74,42 +82,7 @@ internal class AudioClient
 
         _ = Task.Run(async () =>
         {
-            var audioChannel = Channel.CreateUnbounded<byte[]>();
-            _ = RecordMicrophoneAsync(audioChannel);
-            try
-            {
-                var recordSeconds = 3;
-                var sampleSize = SampleRate * recordSeconds;
-                var samples = new float[sampleSize];
-                var currentIndex = 0;
-
-                await foreach (var buffer in audioChannel.Reader.ReadAllAsync(cancellationToken))
-                {
-                    for (int i = 0; i < buffer.Length; i += 2)
-                    {
-                        var sampleValue = BitConverter.ToInt16(buffer, i) / Channels / (float)short.MaxValue;
-                        samples[currentIndex] = sampleValue;
-
-                        currentIndex++;
-                        if (currentIndex >= sampleSize)
-                        {
-                            var sampleCopy = new float[sampleSize];
-                            Array.Copy(samples, sampleCopy, sampleSize);
-                            var id = await Invoker.InvokeSTT(sampleCopy);
-
-                            currentIndex = 0;
-                        }
-                    }
-                }
-            }
-            catch (OperationCanceledException e)
-            {
-                Console.WriteLine($"Error: {e.Message}");
-            }
-            finally
-            {
-                audioChannel.Writer.Complete();
-            }
+            await RecordMicrophoneAsync();
         }, cancellationToken);
     }
 }
