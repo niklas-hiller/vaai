@@ -136,14 +136,13 @@ internal class WhisperClient
                     text += segment.Text;
                 }
                 stopwatch.Stop();
-                Console.WriteLine($"Finishing processing ({stopwatch.Elapsed.Milliseconds / (paragraphData.Length / 1000)}kS/ms -> {stopwatch.Elapsed} seconds)");
+                Console.WriteLine($"Finishing processing ({paragraphData.Length / stopwatch.Elapsed.TotalMilliseconds}kS/s -> {stopwatch.Elapsed} seconds)");
                 queue.OutputQueue.Enqueue(new Result<string>(EStatus.DONE, text));
             }
             else
             {
                 queue.OutputQueue.Enqueue(new Result<string>(EStatus.WAIT_FOR_MORE, ""));
             }
-
         }
     }
 
