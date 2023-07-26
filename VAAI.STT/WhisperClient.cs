@@ -1,21 +1,20 @@
-﻿using VAAI.Library;
+﻿using System.Diagnostics;
+using VAAI.Library;
 using VAAI.Shared.Communication;
 using VAAI.Shared.Enums;
 using Whisper.net;
 using Whisper.net.Ggml;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace VAAI.STT;
 
 internal class WhisperClient
 {
     private const string CLIENT_NAME = "Whisper";
-    private const string MODELS_PATH = "";
 
     // Samples per second. Should always be 16.000 to work with whisper.
     private const int SAMPLE_RATE = 16000;
     // The minimum noise that is considered "something" within 16.000 Samples.
-    private const float MINIMUM_NOISE = 40;
+    private const float MINIMUM_NOISE = 50;
     // At how many samples without noise the segment should stop.
     private const int END_AT = 9600;
     // Minimum relevant samples
@@ -23,7 +22,6 @@ internal class WhisperClient
 
     private readonly string Language;
     private readonly int Threads;
-    private readonly string[] PAUSE = new string[] { "[ Silence ]", "[BLANK_AUDIO]" };
     private readonly WhisperProcessor Processor;
 
     private readonly List<float[]> RetainedData = new();
@@ -41,7 +39,7 @@ internal class WhisperClient
     internal WhisperClient(GgmlType ggmlType, string language, int threads)
     {
         string modelName = Enum.GetNames(typeof(GgmlType))[(int)ggmlType];
-        string modelPath = $"{MODELS_PATH}ggml-{modelName.ToLower()}.bin";
+        string modelPath = $"ggml-{modelName.ToLower()}.bin";
         if (!File.Exists(modelPath))
         {
             Task.Run(async () => await DownloadModel(modelPath, ggmlType)).Wait();
@@ -120,27 +118,32 @@ internal class WhisperClient
                     queue.OutputQueue.Enqueue(new Result<string>(EStatus.DROPPED, ""));
                     return;
                 }
-                CurrentSamplesCount = 0;
 
-                Console.WriteLine("Processing");
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                Console.WriteLine($"Preparing samples... ({CurrentSamplesCount})");
+                CurrentSamplesCount = 0;
+                
                 // Construct the samples array (Also removes the segments without noise at the start & end)
                 float[] paragraphData = ConstructParagraph(RetainedData);
                 RetainedData.Clear();
 
+                Console.WriteLine($"Processing relevant samples... ({paragraphData.Length})");
                 // Process samples
                 string text = "";
                 await foreach (var segment in Processor.ProcessAsync(paragraphData))
                 {
                     text += segment.Text;
                 }
-                Console.WriteLine(text);
+                stopwatch.Stop();
+                Console.WriteLine($"Finishing processing ({stopwatch.Elapsed.Milliseconds / (paragraphData.Length / 1000)}kS/ms -> {stopwatch.Elapsed} seconds)");
                 queue.OutputQueue.Enqueue(new Result<string>(EStatus.DONE, text));
-            } 
+            }
             else
             {
                 queue.OutputQueue.Enqueue(new Result<string>(EStatus.WAIT_FOR_MORE, ""));
             }
-            
+
         }
     }
 
