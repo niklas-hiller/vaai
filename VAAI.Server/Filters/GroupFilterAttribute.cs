@@ -3,7 +3,7 @@
 namespace VAAI.Server.Filters;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class GroupFilterAttribute : Attribute, IHubFilter
+internal class GroupFilterAttribute : Attribute, IHubFilter
 {
     public readonly string[] Groups;
 

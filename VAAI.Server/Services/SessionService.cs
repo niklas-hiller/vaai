@@ -4,7 +4,7 @@ using VAAI.Shared.Enums;
 
 namespace VAAI.Server.Services;
 
-public class SessionService<T> : ISessionService<T> where T : Hub
+internal class SessionService<T> : ISessionService<T> where T : Hub
 {
     private readonly ILogger logger;
     private readonly IHubContext<T> hubContext;

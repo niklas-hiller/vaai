@@ -24,13 +24,13 @@ internal class WhisperClient
         await modelStream.CopyToAsync(fileWriter);
     }
 
-    public WhisperClient(GgmlType ggmlType, string language, int threads)
+    internal WhisperClient(GgmlType ggmlType, string language, int threads)
     {
         string modelName = Enum.GetNames(typeof(GgmlType))[(int)ggmlType];
-        string modelPath= $"{MODELS_PATH}ggml-{modelName.ToLower()}.bin";
+        string modelPath = $"{MODELS_PATH}ggml-{modelName.ToLower()}.bin";
         if (!File.Exists(modelPath))
         {
-            Task.Run(async() => await DownloadModel(modelPath, ggmlType)).Wait();
+            Task.Run(async () => await DownloadModel(modelPath, ggmlType)).Wait();
         }
 
         Language = language;
@@ -42,7 +42,7 @@ internal class WhisperClient
             .Build();
     }
 
-    public static float[] ConstructParagraph(List<float[]> retainedData)
+    private static float[] ConstructParagraph(List<float[]> retainedData)
     {
         int totalLength = 0;
         retainedData.ForEach(data =>
@@ -70,7 +70,7 @@ internal class WhisperClient
             var noiseLevel = Math.Abs(input.Sum());
 
             List<SegmentData> segments = new();
-            if (noiseLevel > 0.2f) 
+            if (noiseLevel > 0.2f)
             {
                 await foreach (var segment in Processor.ProcessAsync(input))
                 {
@@ -109,7 +109,7 @@ internal class WhisperClient
         }
     }
 
-    public async Task StartAsync()
+    internal async Task StartAsync()
     {
         var client = new HubClient(CLIENT_NAME);
         var queue = client.RegisterSTT();

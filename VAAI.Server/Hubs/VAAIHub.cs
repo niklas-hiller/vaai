@@ -7,7 +7,7 @@ using VAAI.Shared.Enums;
 
 namespace VAAI.Server.Hubs;
 
-public class VAAIHub : Hub
+internal class VAAIHub : Hub
 {
     private readonly ILogger logger;
     private readonly ISessionService<VAAIHub> sessionService;

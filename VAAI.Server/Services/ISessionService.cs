@@ -3,7 +3,7 @@ using VAAI.Shared.Communication;
 
 namespace VAAI.Server.Services;
 
-public interface ISessionService<T> where T : Hub
+internal interface ISessionService<T> where T : Hub
 {
     Task AddSessionAsync(string connectionId, Session session);
     Task RemoveSessionAsync(string connectionId);

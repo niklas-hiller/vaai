@@ -1,5 +1,6 @@
 ﻿namespace VAAI.Library;
 
+/// <inheritdoc cref="Queue{T}" />
 public class QueueObservable<T> : Queue<T>
 {
     private readonly List<Action<QueueObservable<T>, T>> DequeueObservers = new();
@@ -7,6 +8,7 @@ public class QueueObservable<T> : Queue<T>
     private readonly List<Action<QueueObservable<T>>> EnqueueObservers = new();
     private readonly List<Func<QueueObservable<T>, Task>> EnqueueObserversAsync = new();
 
+    /// <inheritdoc cref="Queue{T}.Enqueue(T)" />
     public new void Enqueue(T item)
     {
         base.Enqueue(item);
@@ -17,6 +19,7 @@ public class QueueObservable<T> : Queue<T>
         });
     }
 
+    /// <inheritdoc cref="Queue{T}.Dequeue" />
     public new T Dequeue()
     {
         T item = base.Dequeue();

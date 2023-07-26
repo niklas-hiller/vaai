@@ -5,7 +5,7 @@ using VAAI.Shared.Enums;
 
 namespace VAAI.Server.Filters;
 
-public class GroupFilter<T> : IHubFilter where T : Hub
+internal class GroupFilter<T> : IHubFilter where T : Hub
 {
     private readonly ILogger logger;
     private readonly ISessionService<T> sessionService;

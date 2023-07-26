@@ -5,9 +5,9 @@ using VAAI.Server.Services;
 
 namespace VAAI.Server;
 
-public class Program
+internal class Program
 {
-    public static void Main(string[] args)
+    static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 

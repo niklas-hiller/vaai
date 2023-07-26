@@ -4,113 +4,112 @@ using System.Threading.Channels;
 using VAAI.Library;
 using VAAI.Shared.Enums;
 
-namespace VAAI.Client
+namespace VAAI.Client;
+
+internal class AudioClient
 {
-    internal class AudioClient
+    private readonly HubClient Client;
+    private readonly int SampleRate;
+    private readonly int Channels;
+    private readonly ILogger Logger;
+    private readonly Invoker Invoker;
+    private readonly Listener Listener;
+
+    public AudioClient(int sampleRate, int channels)
     {
-        private readonly HubClient Client;
-        private readonly int SampleRate;
-        private readonly int Channels;
-        private readonly ILogger Logger;
-        private readonly Invoker Invoker;
-        private readonly Listener Listener;
-
-        public AudioClient(int sampleRate, int channels)
+        using var loggerFactory = LoggerFactory.Create(builder =>
         {
-            using var loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder
-                    .AddFilter("Microsoft", LogLevel.Warning)
-                    .AddFilter("System", LogLevel.Warning)
-                    .AddConsole();
-            });
-            Logger = loggerFactory.CreateLogger<HubClient>();
+            builder
+                .AddFilter("Microsoft", LogLevel.Warning)
+                .AddFilter("System", LogLevel.Warning)
+                .AddConsole();
+        });
+        Logger = loggerFactory.CreateLogger<HubClient>();
 
-            Client = new HubClient("NAudio");
-            Invoker = Client.RegisterInvoker();
-            Listener = Client.RegisterListener();
-            Listener.OnSTT((message) =>
+        Client = new HubClient("NAudio");
+        Invoker = Client.RegisterInvoker();
+        Listener = Client.RegisterListener();
+        Listener.OnSTT((message) =>
+        {
+            switch (message.Content.Status)
             {
-                switch (message.Content.Status)
+                case EStatus.DROPPED:
+                    Logger.LogInformation($"Listener was informed that a message was dropped. ({message.Id})");
+                    break;
+                case EStatus.WAIT_FOR_MORE:
+                    Logger.LogInformation($"Listener was informed that STT has to wait for more content. ({message.Id})");
+                    break;
+                case EStatus.DONE:
+                    Logger.LogInformation($"Listener was informed that STT finished work ({message.Id}): {message.Content.Content}");
+                    break;
+            }
+        });
+
+        SampleRate = sampleRate;
+        Channels = channels;
+    }
+
+    public async Task RecordMicrophoneAsync(Channel<byte[]> audioChannel)
+    {
+        using var waveIn = new WaveInEvent();
+        waveIn.WaveFormat = new WaveFormat(SampleRate, Channels);
+
+        waveIn.DataAvailable += (sender, args) =>
+        {
+            var buffer = new byte[args.BytesRecorded];
+            Array.Copy(args.Buffer, buffer, args.BytesRecorded);
+            audioChannel.Writer.TryWrite(buffer);
+        };
+
+        waveIn.StartRecording();
+
+        await Task.Delay(-1);
+
+        waveIn.StopRecording();
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        await Client.StartAsync();
+
+        _ = Task.Run(async () =>
+        {
+            var audioChannel = Channel.CreateUnbounded<byte[]>();
+            _ = RecordMicrophoneAsync(audioChannel);
+            try
+            {
+                var recordSeconds = 3;
+                var sampleSize = SampleRate * recordSeconds;
+                var samples = new float[sampleSize];
+                var currentIndex = 0;
+
+                await foreach (var buffer in audioChannel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    case EStatus.DROPPED:
-                        Logger.LogInformation($"Listener was informed that a message was dropped. ({message.Id})");
-                        break;
-                    case EStatus.WAIT_FOR_MORE:
-                        Logger.LogInformation($"Listener was informed that STT has to wait for more content. ({message.Id})");
-                        break;
-                    case EStatus.DONE:
-                        Logger.LogInformation($"Listener was informed that STT finished work ({message.Id}): {message.Content.Content}");
-                        break;
-                }
-            });
-
-            SampleRate = sampleRate;
-            Channels = channels;
-        }
-
-        public async Task RecordMicrophoneAsync(Channel<byte[]> audioChannel)
-        {
-            using var waveIn = new WaveInEvent();
-            waveIn.WaveFormat = new WaveFormat(SampleRate, Channels);
-
-            waveIn.DataAvailable += (sender, args) =>
-            {
-                var buffer = new byte[args.BytesRecorded];
-                Array.Copy(args.Buffer, buffer, args.BytesRecorded);
-                audioChannel.Writer.TryWrite(buffer);
-            };
-
-            waveIn.StartRecording();
-
-            await Task.Delay(-1);
-
-            waveIn.StopRecording();
-        }
-
-        public async Task StartAsync(CancellationToken cancellationToken = default)
-        {
-            await Client.StartAsync();
-
-            _ = Task.Run(async () =>
-            {
-                var audioChannel = Channel.CreateUnbounded<byte[]>();
-                _ = RecordMicrophoneAsync(audioChannel);
-                try
-                {
-                    var recordSeconds = 3;
-                    var sampleSize = SampleRate * recordSeconds;
-                    var samples = new float[sampleSize];
-                    var currentIndex = 0;
-
-                    await foreach (var buffer in audioChannel.Reader.ReadAllAsync(cancellationToken))
+                    for (int i = 0; i < buffer.Length; i += 2)
                     {
-                        for (int i = 0; i < buffer.Length; i += 2)
+                        var sampleValue = BitConverter.ToInt16(buffer, i) / Channels / (float)short.MaxValue;
+                        samples[currentIndex] = sampleValue;
+
+                        currentIndex++;
+                        if (currentIndex >= sampleSize)
                         {
-                            var sampleValue = BitConverter.ToInt16(buffer, i) / Channels / (float)short.MaxValue;
-                            samples[currentIndex] = sampleValue;
+                            var sampleCopy = new float[sampleSize];
+                            Array.Copy(samples, sampleCopy, sampleSize);
+                            var id = await Invoker.InvokeSTT(sampleCopy);
 
-                            currentIndex++;
-                            if (currentIndex >= sampleSize)
-                            {
-                                var sampleCopy = new float[sampleSize];
-                                Array.Copy(samples, sampleCopy, sampleSize);
-                                var id = await Invoker.InvokeSTT(sampleCopy);
-
-                                currentIndex = 0;
-                            }
+                            currentIndex = 0;
                         }
                     }
                 }
-                catch (OperationCanceledException e)
-                {
-                    Console.WriteLine($"Error: {e.Message}");
-                }
-                finally
-                {
-                    audioChannel.Writer.Complete();
-                }
-            }, cancellationToken);
-        }
+            }
+            catch (OperationCanceledException e)
+            {
+                Console.WriteLine($"Error: {e.Message}");
+            }
+            finally
+            {
+                audioChannel.Writer.Complete();
+            }
+        }, cancellationToken);
     }
 }
