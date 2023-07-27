@@ -87,10 +87,8 @@ internal class WhisperClient
 
     private async Task Process(TaskQueue<float[], string> queue)
     {
-        if (queue.HasTasks)
+        await queue.Next(async (input) =>
         {
-            // Read Input
-            var input = queue.InputQueue.Dequeue();
             CurrentSamplesCount += input.Length;
             RetainedData.Add(input);
 
@@ -115,15 +113,14 @@ internal class WhisperClient
                     CurrentSamplesCount = 0;
                     RetainedData.Clear();
 
-                    queue.OutputQueue.Enqueue(new Result<string>(EStatus.DROPPED, ""));
-                    return;
+                    return new Result<string>(EStatus.DROPPED, "");
                 }
 
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
                 Console.WriteLine($"Preparing samples... ({CurrentSamplesCount})");
                 CurrentSamplesCount = 0;
-                
+
                 // Construct the samples array (Also removes the segments without noise at the start & end)
                 float[] paragraphData = ConstructParagraph(RetainedData);
                 RetainedData.Clear();
@@ -137,13 +134,13 @@ internal class WhisperClient
                 }
                 stopwatch.Stop();
                 Console.WriteLine($"Finishing processing ({paragraphData.Length / stopwatch.Elapsed.TotalMilliseconds}kS/s -> {stopwatch.Elapsed} seconds)");
-                queue.OutputQueue.Enqueue(new Result<string>(EStatus.DONE, text));
+                return new Result<string>(EStatus.DONE, text);
             }
             else
             {
-                queue.OutputQueue.Enqueue(new Result<string>(EStatus.WAIT_FOR_MORE, ""));
+                return new Result<string>(EStatus.WAIT_FOR_MORE, "");
             }
-        }
+        });
     }
 
     internal async Task StartAsync()

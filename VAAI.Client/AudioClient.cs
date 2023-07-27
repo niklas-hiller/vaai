@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using NAudio.Wave;
-using System.Threading.Channels;
 using VAAI.Library;
 using VAAI.Shared.Enums;
 
@@ -80,9 +79,6 @@ internal class AudioClient
     {
         await Client.StartAsync();
 
-        _ = Task.Run(async () =>
-        {
-            await RecordMicrophoneAsync();
-        }, cancellationToken);
+        _ = Task.Run(RecordMicrophoneAsync, cancellationToken);
     }
 }

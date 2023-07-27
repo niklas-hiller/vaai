@@ -4,9 +4,8 @@ namespace VAAI.Library;
 
 public class MessageQueue<T1, T2>
 {
-    public TaskQueue<T1, T2> Tasks = new();
+    public TaskQueue<T1, T2> Tasks = new(1);
     private readonly QueueObservable<Guid> Queue = new();
-    public bool HasFinishedTasks { get => Tasks.OutputQueue.Count > 0; }
 
     public void Enqueue(Message<T1> message)
     {

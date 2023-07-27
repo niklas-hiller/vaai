@@ -4,8 +4,8 @@ namespace VAAI.Library;
 
 public class TaskQueue<T1, T2>
 {
-    public QueueObservable<T1> InputQueue = new();
-    public QueueObservable<Result<T2>> OutputQueue = new();
+    public readonly QueueObservable<T1> InputQueue = new();
+    public readonly QueueObservable<Result<T2>> OutputQueue = new();
 
     private readonly List<Action<TaskQueue<T1, T2>>> InputObservers = new();
     private readonly List<Func<TaskQueue<T1, T2>, Task>> InputObserversAsync = new();
@@ -14,8 +14,12 @@ public class TaskQueue<T1, T2>
     public bool HasTasks { get => InputQueue.Count > 0; }
     public bool HasResults { get => OutputQueue.Count > 0; }
 
-    public TaskQueue()
+    private readonly SemaphoreSlim semaphoreSlim;
+
+    public TaskQueue(int maximumConcurrent)
     {
+        semaphoreSlim = new SemaphoreSlim(maximumConcurrent);
+
         InputQueue.OnEnqueue((queue) => InputObservers.ForEach((observer) => observer(this)));
         InputQueue.OnEnqueueAsync(async (queue) =>
         {
@@ -33,6 +37,20 @@ public class TaskQueue<T1, T2>
                 await observer(this);
             }
         });
+    }
+
+    public async Task Next(Func<T1, Task<Result<T2>?>> task)
+    {
+        if (HasTasks)
+        {
+            await semaphoreSlim.WaitAsync();
+            var result = await task(InputQueue.Dequeue());
+            if (result != null)
+            {
+                OutputQueue.Enqueue(result);
+            }
+            semaphoreSlim.Release();
+        }
     }
 
     public void OnInput(Action<TaskQueue<T1, T2>> action) => InputObservers.Add(action);
