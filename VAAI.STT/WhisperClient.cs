@@ -95,15 +95,16 @@ internal class WhisperClient
             // Long enough no noise, check result.
             if (LastNoise >= END_AT)
             {
-                LastNoise = 0;
                 // Check if enough relevant samples are present
                 if (CurrentSamplesCount < MINIMUM_RELEVANT + END_AT)
                 {
-                    CurrentSamplesCount = 0;
-                    RetainedData.Clear();
+                    LastNoise -= RetainedData.First().Length;
+                    CurrentSamplesCount -= RetainedData.First().Length;
+                    RetainedData.RemoveAt(0);
 
                     return new Result<string>(EStatus.DROPPED, "");
                 }
+                LastNoise = 0;
 
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();

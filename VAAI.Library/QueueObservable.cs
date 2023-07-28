@@ -12,22 +12,16 @@ public class QueueObservable<T> : Queue<T>
     public new void Enqueue(T item)
     {
         base.Enqueue(item);
-        Task.Run(() =>
-        {
-            EnqueueObservers.ForEach((observer) => observer(this));
-            EnqueueObserversAsync.ForEach(async (observer) => await observer(this));
-        });
+        EnqueueObservers.ForEach((observer) => observer(this));
+        EnqueueObserversAsync.ForEach(async (observer) => await observer(this));
     }
 
     /// <inheritdoc cref="Queue{T}.Dequeue" />
     public new T Dequeue()
     {
         T item = base.Dequeue();
-        Task.Run(() =>
-        {
-            DequeueObservers.ForEach((observer) => observer(this, item));
-            DequeueObserversAsync.ForEach(async (observer) => await observer(this, item));
-        });
+        DequeueObservers.ForEach((observer) => observer(this, item));
+        DequeueObserversAsync.ForEach(async (observer) => await observer(this, item));
         return item;
     }
 
