@@ -1,1 +1,2 @@
-# VAAI
+# Virtual Asynchronous Application Interface (VAAI)
+Virtual Asynchronous Application Interface is a application designed to act as an intermediary between various connected services. Its primary purpose is to receive tasks from clients and then delegate those tasks to the appropriate services for processing. An example use case involves clients submitting a STT requests, which the server forwards to a Speech-to-Text (STT) AI service responsible for converting audio samples into text. Once the STT AI processes the data, it sends the results back to the server, which, in turn, returns them to the client.
