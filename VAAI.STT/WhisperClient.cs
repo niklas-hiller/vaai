@@ -19,6 +19,8 @@ internal class WhisperClient
     private const int END_AT = 9600;
     // Minimum relevant samples
     private const int MINIMUM_RELEVANT = 9600;
+    // How much "unrelevant" content at start and end should stay (if bigger than END_AT, will be equal END_AT)
+    private const int KEEP_PUFFER = 3200;
 
     private readonly string Language;
     private readonly int Threads;
@@ -56,31 +58,17 @@ internal class WhisperClient
 
     private static float[] ConstructParagraph(List<float[]> retainedData)
     {
-        var startIndex = 0;
-        int relevantLength = 0;
-
-        retainedData.ForEach(data =>
-        {
-            // Remove unrelevant start.
-            if (relevantLength == 0)
-            {
-                var noiseLevel = data.Sum(Math.Abs);
-                if (noiseLevel < (MINIMUM_NOISE / (SAMPLE_RATE / data.Length)))
-                {
-                    startIndex++;
-                    return;
-                }
-            }
-            relevantLength += data.Length;
-        });
-        float[] paragraphData = new float[relevantLength - END_AT];
-
-        int index = 0;
-        for (int i = startIndex; index < relevantLength - END_AT; i++)
-        {
-            Array.Copy(retainedData[i], 0, paragraphData, index, retainedData[i].Length);
-            index += retainedData[i].Length;
-        }
+        int totalLength = retainedData.SelectMany(s => s).Count();
+        int prefixCut = retainedData
+            .TakeWhile(data => data.Sum(Math.Abs) < (MINIMUM_NOISE / (SAMPLE_RATE / data.Length)))
+            .SelectMany(s => s)
+            .ToArray().Length;
+        int suffixCut = END_AT - Math.Min(END_AT, KEEP_PUFFER);
+        var paragraphData = retainedData
+            .SelectMany(s => s)
+            .Skip(prefixCut - Math.Min(prefixCut, KEEP_PUFFER))
+            .Take(totalLength - prefixCut - suffixCut)
+            .ToArray();
 
         return paragraphData;
     }
