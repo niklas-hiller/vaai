@@ -63,10 +63,11 @@ internal class WhisperClient
             .TakeWhile(data => data.Sum(Math.Abs) < (MINIMUM_NOISE / (SAMPLE_RATE / data.Length)))
             .SelectMany(s => s)
             .ToArray().Length;
+        prefixCut -= Math.Min(prefixCut, KEEP_PUFFER);
         int suffixCut = END_AT - Math.Min(END_AT, KEEP_PUFFER);
         var paragraphData = retainedData
             .SelectMany(s => s)
-            .Skip(prefixCut - Math.Min(prefixCut, KEEP_PUFFER))
+            .Skip(prefixCut)
             .Take(totalLength - prefixCut - suffixCut)
             .ToArray();
 
