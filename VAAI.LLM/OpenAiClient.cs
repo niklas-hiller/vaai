@@ -11,64 +11,60 @@ internal class OpenAiClient
 {
     private const string CLIENT_NAME = "OpenAi";
     private readonly string Model;
+    private readonly OpenAIClient Client;
 
-    public OpenAiClient(string model)
+    internal OpenAiClient(string model)
     {
         Model = model;
+
+        string endpoint = GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT")
+            ?? throw new ArgumentNullException("Couldn't find AZURE_OPENAI_ENDPOINT in environment variables.");
+        string key = GetEnvironmentVariable("AZURE_OPENAI_KEY")
+            ?? throw new ArgumentNullException("Couldn't find AZURE_OPENAI_KEY in environment variables.");
+        Client = new(new Uri(endpoint), new AzureKeyCredential(key));
     }
 
     private async Task Process(TaskQueue<string, string> queue)
     {
-        string endpoint = GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT")
-            ?? throw new ArgumentNullException("Couldn't find AZURE_OPENAI_ENDPOINT in environment variables.");
-        string key = GetEnvironmentVariable("AZURE_OPENAI_KEY")
-            ?? throw new ArgumentNullException("Couldn't find AZURE_OPENAI_KEY in environment variables."); ;
-        OpenAIClient client = new(new Uri(endpoint), new AzureKeyCredential(key));
-        while (true)
+        await queue.Next(async (input) =>
         {
-            if (queue.HasTasks)
+            var chatCompletionsOptions = new ChatCompletionsOptions()
             {
-                // Read Input
-                var input = queue.InputQueue.Dequeue();
-
-                var chatCompletionsOptions = new ChatCompletionsOptions()
+                Messages =
                 {
-                    Messages =
-                    {
-                        new ChatMessage(ChatRole.System, "You are a helpful assistant."),
-                        new ChatMessage(ChatRole.User, "Does Azure OpenAI support customer managed keys?") { Name = "same" },
-                        new ChatMessage(ChatRole.Assistant, "Yes, customer managed keys are supported by Azure OpenAI."),
-                        new ChatMessage(ChatRole.User, "Do other Azure AI services support this too?") { Name = "same" },
+                    new ChatMessage(ChatRole.System, "You are a helpful assistant."),
+                    new ChatMessage(ChatRole.User, "Does Azure OpenAI support customer managed keys?") { Name = "same" },
+                    new ChatMessage(ChatRole.Assistant, "Yes, customer managed keys are supported by Azure OpenAI."),
+                    new ChatMessage(ChatRole.User, "Do other Azure AI services support this too?") { Name = "same" },
                     },
-                    MaxTokens = 100
-                };
+                MaxTokens = 100
+            };
 
-                Response<StreamingChatCompletions> response = await client.GetChatCompletionsStreamingAsync(
-                    deploymentOrModelName: Model, chatCompletionsOptions);
-                using StreamingChatCompletions streamingChatCompletions = response.Value;
+            Response<StreamingChatCompletions> response = await Client.GetChatCompletionsStreamingAsync(
+                deploymentOrModelName: Model, chatCompletionsOptions);
+            using StreamingChatCompletions streamingChatCompletions = response.Value;
 
-                await foreach (StreamingChatChoice choice in streamingChatCompletions.GetChoicesStreaming())
+            await foreach (StreamingChatChoice choice in streamingChatCompletions.GetChoicesStreaming())
+            {
+                await foreach (ChatMessage message in choice.GetMessageStreaming())
                 {
-                    await foreach (ChatMessage message in choice.GetMessageStreaming())
-                    {
-                        Console.Write(message.Content);
-                    }
-                    Console.WriteLine();
+                    Console.Write(message.Content);
                 }
-
-                var result = new Result<string>(EStatus.DROPPED, "");
-                queue.OutputQueue.Enqueue(result);
+                Console.WriteLine();
             }
-            await Task.Delay(10);
-        }
+
+            return new Result<string>(EStatus.DROPPED, "");
+        });
     }
 
-    public async Task StartAsync()
+    internal async Task StartAsync()
     {
         var client = new HubClient(CLIENT_NAME);
         var queue = client.RegisterLLM();
         await client.StartAsync();
 
-        await Process(queue);
+        queue.OnInputAsync(Process);
+
+        await Task.Delay(-1);
     }
 }
