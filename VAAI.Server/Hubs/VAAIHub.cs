@@ -27,7 +27,7 @@ internal class VAAIHub : Hub
     {
         // Add the session to the group name.
         await sessionService.AddSessionAsync(Context.ConnectionId, session);
-        logger.LogDebug($"{session.Name} ({Context.ConnectionId}) connected as {string.Join(", ", session.Groups)}");
+        logger.LogDebug($"{Context.ConnectionId} connected as {session}");
 
         await Clients.Caller.SendAsync(Broadcasts.SessionConnect);
     }
@@ -43,7 +43,7 @@ internal class VAAIHub : Hub
         Message<string> message = new(text);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2S: {text}");
+        logger.LogInformation($"{session} requests T2S: {text}");
 
         await Clients.Group(SessionGroups.TTS_AI).SendAsync(Broadcasts.TextToSpeech, message);
         return message.Id;
@@ -60,7 +60,7 @@ internal class VAAIHub : Hub
         Message<float[]> message = new(samples);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests S2T: {samples.Length} Samples");
+        logger.LogInformation($"{session} requests S2T: {samples.Length} Samples");
 
         await Clients.Group(SessionGroups.STT_AI).SendAsync(Broadcasts.SpeechToText, message);
         return message.Id;
@@ -77,7 +77,7 @@ internal class VAAIHub : Hub
         Message<string> message = new(text);
 
         Session session = sessionService.GetSession(Context.ConnectionId);
-        logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) requests T2T: {text}");
+        logger.LogInformation($"{session} requests T2T: {text}");
 
         await Clients.Group(SessionGroups.LLM_AI).SendAsync(Broadcasts.TextToText, message);
         return message.Id;
@@ -95,13 +95,13 @@ internal class VAAIHub : Hub
         switch (message.Content.Status)
         {
             case EStatus.DROPPED:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) dropped T2S ({message.Id})");
+                logger.LogInformation($"{session} dropped T2S ({message.Id})");
                 break;
             case EStatus.WAIT_FOR_MORE:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) waits for more data to T2S ({message.Id})");
+                logger.LogInformation($"{session} waits for more data to T2S ({message.Id})");
                 break;
             case EStatus.DONE:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2S ({message.Id})");
+                logger.LogInformation($"{session} finished T2S ({message.Id})");
                 break;
         }
 
@@ -120,13 +120,13 @@ internal class VAAIHub : Hub
         switch (message.Content.Status)
         {
             case EStatus.DROPPED:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) dropped S2T ({message.Id})");
+                logger.LogInformation($"{session} dropped S2T ({message.Id})");
                 break;
             case EStatus.WAIT_FOR_MORE:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) waits for more data to S2T ({message.Id})");
+                logger.LogInformation($"{session} waits for more data to S2T ({message.Id})");
                 break;
             case EStatus.DONE:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished S2T ({message.Id}): {message.Content.Content}");
+                logger.LogInformation($"{session} finished S2T ({message.Id}): {message.Content.Content}");
                 break;
         }
 
@@ -145,13 +145,13 @@ internal class VAAIHub : Hub
         switch (message.Content.Status)
         {
             case EStatus.DROPPED:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) dropped T2T ({message.Id})");
+                logger.LogInformation($"{session} dropped T2T ({message.Id})");
                 break;
             case EStatus.WAIT_FOR_MORE:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) waits for more data to T2T ({message.Id})");
+                logger.LogInformation($"{session} waits for more data to T2T ({message.Id})");
                 break;
             case EStatus.DONE:
-                logger.LogInformation($"{session.Name} ({string.Join(", ", session.Groups)}) finished T2T ({message.Id})");
+                logger.LogInformation($"{session} finished T2T ({message.Id})");
                 break;
         }
 

@@ -33,10 +33,10 @@ internal class AudioClient
             switch (message.Content.Status)
             {
                 case EStatus.DROPPED:
-                    Logger.LogInformation($"Listener was informed that a message was dropped. ({message.Id})");
+                    Logger.LogDebug($"Listener was informed that a message was dropped. ({message.Id})");
                     break;
                 case EStatus.WAIT_FOR_MORE:
-                    Logger.LogInformation($"Listener was informed that STT has to wait for more content. ({message.Id})");
+                    Logger.LogDebug($"Listener was informed that STT has to wait for more content. ({message.Id})");
                     break;
                 case EStatus.DONE:
                     Logger.LogInformation($"Listener was informed that STT finished work ({message.Id}): {message.Content.Content}");

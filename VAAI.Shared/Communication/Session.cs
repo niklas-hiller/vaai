@@ -16,4 +16,9 @@ public class Session
         Name = name;
         Groups = groups;
     }
+
+    public override string ToString()
+    {
+        return $"{Name} ({string.Join(", ", Groups)})";
+    }
 }

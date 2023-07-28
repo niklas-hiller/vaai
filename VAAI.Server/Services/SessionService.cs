@@ -38,7 +38,7 @@ internal class SessionService<T> : ISessionService<T> where T : Hub
         }
         Sessions[connectionId] = session;
 
-        logger.LogInformation($"Added session for {connectionId} as {session.Name} ({string.Join(", ", session.Groups)})");
+        logger.LogInformation($"Added session for {connectionId} as {session})");
     }
 
     public async Task RemoveSessionAsync(string connectionId)
@@ -57,39 +57,21 @@ internal class SessionService<T> : ISessionService<T> where T : Hub
         }
         Sessions.Remove(connectionId);
 
-        logger.LogInformation($"Removed session of {connectionId} as {session.Name} ({string.Join(", ", session.Groups)})");
+        logger.LogInformation($"Removed session of {connectionId} as {session})");
     }
 
     public bool InGroup(string connectionId, string groupName)
-    {
-        return Sessions[connectionId].Groups.Any((group) => group == groupName);
-    }
+        => Sessions[connectionId].Groups.Any((group) => group == groupName);
 
     public bool InGroupAny(string connectionId, string[] groupNames)
-    {
-        if (groupNames.Length == 0)
-        {
-            return true;
-        }
-        return groupNames.Any((groupName) => Sessions[connectionId].Groups.Any((group) => group == groupName));
-    }
+        => groupNames.Length == 0 || groupNames.Any((groupName) => Sessions[connectionId].Groups.Any((group) => group == groupName));
 
     public bool InGroupAll(string connectionId, string[] groupNames)
-    {
-        if (groupNames.Length == 0)
-        {
-            return true;
-        }
-        return groupNames.All((groupName) => Sessions[connectionId].Groups.Any((group) => group == groupName));
-    }
+        => groupNames.Length == 0 || groupNames.All((groupName) => Sessions[connectionId].Groups.Any((group) => group == groupName));
 
     public Session? TryGetSession(string connectionId)
-    {
-        return Sessions.ContainsKey(connectionId) ? Sessions[connectionId] : null;
-    }
+        => Sessions.ContainsKey(connectionId) ? Sessions[connectionId] : null;
 
     public Session GetSession(string connectionId)
-    {
-        return Sessions[connectionId];
-    }
+        => Sessions[connectionId];
 }
