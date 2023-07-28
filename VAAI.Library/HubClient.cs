@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using VAAI.Shared.Communication;
+using VAAI.Shared.Enums;
 
 namespace VAAI.Library;
 
@@ -9,7 +11,6 @@ public class HubClient
     public HubConnection Connection { get; set; }
     private string Name { get; set; }
     private List<string> Groups { get; set; }
-    private List<Task> AsyncTasks { get; set; } = new List<Task>();
     private readonly ILogger logger;
     public bool IsActive { get; set; } = false;
 
@@ -32,94 +33,33 @@ public class HubClient
 
         Connection.On(Broadcasts.SessionConnect, () =>
         {
-            _ = Task.Run(async () =>
-            {
-                logger.LogInformation("Successfully connected to Hub.");
-                AsyncTasks.ForEach((task) =>
-                {
-                    task.Start();
-                });
-                IsActive = true;
-                await Task.Delay(-1);
-            });
+            logger.LogInformation("Successfully connected to Hub.");
+            IsActive = true;
         });
     }
 
-    public TaskQueue<string, float[]> RegisterTTS()
+    public TaskQueue<T1, T2> RegisterProcessor<T1, T2>(EProcessor processor)
     {
         if (IsActive)
         {
             throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
         }
 
-        if (Groups.Contains(SessionGroups.TTS_AI))
+        var sessionGroup = processor.ToGroup();
+        if (Groups.Contains(sessionGroup))
         {
-            throw new NotSupportedException($"You can't register the {SessionGroups.TTS_AI} multiple times.");
+            throw new NotSupportedException($"You can't register the {sessionGroup} multiple times.");
         }
-        logger.LogDebug($"Register Hub Client as TTS AI.");
-        Groups.Add(SessionGroups.TTS_AI);
+        logger.LogDebug($"Register Hub Client as {sessionGroup}.");
+        Groups.Add(sessionGroup);
 
-        var messageQueue = new MessageQueue<string, float[]>();
-        Connection.On<Message<string>>(Broadcasts.TextToSpeech, messageQueue.Enqueue);
+        var messageQueue = new MessageQueue<T1, T2>();
+        Connection.On<Message<T1>>(processor.ToIngoingBroadcast(), messageQueue.Enqueue);
         messageQueue.Tasks.OnOutputAsync(async (queue) =>
         {
             if (queue.HasResults)
             {
-                await Connection.SendAsync(Broadcasts.TextToSpeechResult, messageQueue.Dequeue());
-            }
-        });
-
-        return messageQueue.Tasks;
-    }
-
-    public TaskQueue<float[], string> RegisterSTT()
-    {
-        if (IsActive)
-        {
-            throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
-        }
-
-        if (Groups.Contains(SessionGroups.STT_AI))
-        {
-            throw new NotSupportedException($"You can't register the {SessionGroups.STT_AI} multiple times.");
-        }
-        logger.LogDebug($"Register Hub Client as STT AI.");
-        Groups.Add(SessionGroups.STT_AI);
-
-        var messageQueue = new MessageQueue<float[], string>();
-        Connection.On<Message<float[]>>(Broadcasts.SpeechToText, messageQueue.Enqueue);
-        messageQueue.Tasks.OnOutputAsync(async (queue) =>
-        {
-            if (queue.HasResults)
-            {
-                await Connection.SendAsync(Broadcasts.SpeechToTextResult, messageQueue.Dequeue());
-            }
-        });
-
-        return messageQueue.Tasks;
-    }
-
-    public TaskQueue<string, string> RegisterLLM()
-    {
-        if (IsActive)
-        {
-            throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
-        }
-
-        if (Groups.Contains(SessionGroups.LLM_AI))
-        {
-            throw new NotSupportedException($"You can't register the {SessionGroups.LLM_AI} multiple times.");
-        }
-        logger.LogDebug($"Register Hub Client as LLM AI.");
-        Groups.Add(SessionGroups.LLM_AI);
-
-        var messageQueue = new MessageQueue<string, string>();
-        Connection.On<Message<string>>(Broadcasts.TextToText, messageQueue.Enqueue);
-        messageQueue.Tasks.OnOutputAsync(async (queue) =>
-        {
-            if (queue.HasResults)
-            {
-                await Connection.SendAsync(Broadcasts.TextToTextResult, messageQueue.Dequeue());
+                await Connection.SendAsync(processor.ToOutgoingBroadcast(), messageQueue.Dequeue());
             }
         });
 
@@ -173,7 +113,7 @@ public class HubClient
 
         while (!IsActive)
         {
-            await Task.Delay(100);
+            await Task.Delay(10);
         }
     }
 }

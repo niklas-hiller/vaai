@@ -60,7 +60,7 @@ internal class OpenAiClient
     internal async Task StartAsync()
     {
         var client = new HubClient(CLIENT_NAME);
-        var queue = client.RegisterLLM();
+        var queue = client.RegisterProcessor<string, string>(EProcessor.LLM);
         await client.StartAsync();
 
         queue.OnInputAsync(Process);

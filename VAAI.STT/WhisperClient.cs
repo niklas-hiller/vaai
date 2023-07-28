@@ -134,7 +134,7 @@ internal class WhisperClient
                 }
                 stopwatch.Stop();
                 Console.WriteLine($"Finishing processing ({paragraphData.Length / stopwatch.Elapsed.TotalMilliseconds}kS/s -> {stopwatch.Elapsed} seconds)");
-                return new Result<string>(EStatus.DONE, text);
+                return new Result<string>(EStatus.DONE, text ?? "");
             }
             else
             {
@@ -146,7 +146,7 @@ internal class WhisperClient
     internal async Task StartAsync()
     {
         var client = new HubClient(CLIENT_NAME);
-        var queue = client.RegisterSTT();
+        var queue = client.RegisterProcessor<float[], string>(EProcessor.STT);
         await client.StartAsync();
 
         queue.OnInputAsync(Process);
