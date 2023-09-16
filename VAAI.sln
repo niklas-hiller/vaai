@@ -15,7 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VAAI.TTS", "VAAI.TTS\VAAI.T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VAAI.LLM", "VAAI.LLM\VAAI.LLM.csproj", "{621FDDC3-D9C1-4B59-9DE5-D607EEF3E8D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VAAI.Client", "VAAI.Client\VAAI.Client.csproj", "{10FF6BF0-C421-41B1-B966-AF14D2D47E21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VAAI.Client", "VAAI.Client\VAAI.Client.csproj", "{10FF6BF0-C421-41B1-B966-AF14D2D47E21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VAAI.Discord", "VAAI.Discord\VAAI.Discord.csproj", "{7FF3B7F4-DF92-4902-8D00-00866C488B15}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{10FF6BF0-C421-41B1-B966-AF14D2D47E21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10FF6BF0-C421-41B1-B966-AF14D2D47E21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10FF6BF0-C421-41B1-B966-AF14D2D47E21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FF3B7F4-DF92-4902-8D00-00866C488B15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FF3B7F4-DF92-4902-8D00-00866C488B15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FF3B7F4-DF92-4902-8D00-00866C488B15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FF3B7F4-DF92-4902-8D00-00866C488B15}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

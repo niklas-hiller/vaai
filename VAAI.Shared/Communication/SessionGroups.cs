@@ -9,5 +9,6 @@ public class SessionGroups
     public const string Invoker = "Invoker";
     public const string Listener = "Listener";
 
-    public static bool Contains(string groupName) => typeof(SessionGroups).GetField(groupName) != null;
+    public static bool Contains(string groupName) 
+        => typeof(SessionGroups).GetField(groupName) != null;
 }

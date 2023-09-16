@@ -14,7 +14,5 @@ public class MessageQueue<T1, T2>
     }
 
     public Message<Result<T2>> Dequeue()
-    {
-        return new Message<Result<T2>>(Queue.Dequeue(), Tasks.OutputQueue.Dequeue());
-    }
+        => new Message<Result<T2>>(Queue.Dequeue(), Tasks.OutputQueue.Dequeue());
 }

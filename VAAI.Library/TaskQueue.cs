@@ -53,8 +53,12 @@ public class TaskQueue<T1, T2>
         }
     }
 
-    public void OnInput(Action<TaskQueue<T1, T2>> action) => InputObservers.Add(action);
-    public void OnInputAsync(Func<TaskQueue<T1, T2>, Task> task) => InputObserversAsync.Add(task);
-    public void OnOutput(Action<TaskQueue<T1, T2>> action) => OutputObservers.Add(action);
-    public void OnOutputAsync(Func<TaskQueue<T1, T2>, Task> task) => OutputObserversAsync.Add(task);
+    public void OnInput(Action<TaskQueue<T1, T2>> action) 
+        => InputObservers.Add(action);
+    public void OnInputAsync(Func<TaskQueue<T1, T2>, Task> task) 
+        => InputObserversAsync.Add(task);
+    public void OnOutput(Action<TaskQueue<T1, T2>> action) 
+        => OutputObservers.Add(action);
+    public void OnOutputAsync(Func<TaskQueue<T1, T2>, Task> task) 
+        => OutputObserversAsync.Add(task);
 }

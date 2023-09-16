@@ -7,7 +7,7 @@ using Whisper.net.Ggml;
 
 namespace VAAI.STT;
 
-internal class WhisperClient
+internal class WhisperClient : IAsyncDisposable
 {
     private const string CLIENT_NAME = "Whisper";
 
@@ -51,9 +51,9 @@ internal class WhisperClient
         Threads = threads;
 
         var whisperFactory = WhisperFactory.FromPath(modelPath);
-        Processor = whisperFactory.CreateBuilder()
-            .WithLanguage(Language).WithThreads(Threads)
-            .Build();
+        var whisperBuilder = whisperFactory.CreateBuilder()
+            .WithLanguage(Language).WithThreads(Threads);
+        Processor = whisperBuilder.Build();
     }
 
     private static float[] ConstructParagraph(List<float[]> retainedData)
@@ -122,6 +122,7 @@ internal class WhisperClient
                 {
                     text += segment.Text;
                 }
+
                 stopwatch.Stop();
                 Console.WriteLine($"Finishing processing ({paragraphData.Length / stopwatch.Elapsed.TotalMilliseconds}kS/s -> {stopwatch.Elapsed} seconds)");
                 return new Result<string>(EStatus.DONE, text ?? "");
@@ -133,14 +134,29 @@ internal class WhisperClient
         });
     }
 
-    internal async Task StartAsync()
+    internal async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        var client = new HubClient(CLIENT_NAME);
-        var queue = client.RegisterProcessor<float[], string>(EProcessor.STT);
-        await client.StartAsync();
+        await using (var client = new HubClient(CLIENT_NAME))
+        {
+            var queue = client.RegisterProcessor<float[], string>(EProcessor.STT);
+            await client.StartAsync(cancellationToken);
 
-        queue.OnInputAsync(Process);
+            queue.OnInputAsync(Process);
 
-        await Task.Delay(-1);
+            try
+            {
+                await Task.Delay(-1, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                Console.WriteLine("Stopped Whisper");
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Processor.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
 }

@@ -8,7 +8,5 @@ internal class GroupFilterAttribute : Attribute, IHubFilter
     public readonly string[] Groups;
 
     public GroupFilterAttribute(params string[] groups)
-    {
-        this.Groups = groups;
-    }
+        => Groups = groups;
 }

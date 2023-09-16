@@ -25,8 +25,12 @@ public class QueueObservable<T> : Queue<T>
         return item;
     }
 
-    public void OnEnqueue(Action<QueueObservable<T>> action) => EnqueueObservers.Add(action);
-    public void OnDequeue(Action<QueueObservable<T>, T> action) => DequeueObservers.Add(action);
-    public void OnEnqueueAsync(Func<QueueObservable<T>, Task> task) => EnqueueObserversAsync.Add(task);
-    public void OnDequeueAsync(Func<QueueObservable<T>, T, Task> task) => DequeueObserversAsync.Add(task);
+    public void OnEnqueue(Action<QueueObservable<T>> action) 
+        => EnqueueObservers.Add(action);
+    public void OnDequeue(Action<QueueObservable<T>, T> action) 
+        => DequeueObservers.Add(action);
+    public void OnEnqueueAsync(Func<QueueObservable<T>, Task> task) 
+        => EnqueueObserversAsync.Add(task);
+    public void OnDequeueAsync(Func<QueueObservable<T>, T, Task> task)
+        => DequeueObserversAsync.Add(task);
 }

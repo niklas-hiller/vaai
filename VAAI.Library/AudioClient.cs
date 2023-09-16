@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using NAudio.Wave;
-using VAAI.Library;
 using VAAI.Shared.Enums;
 
-namespace VAAI.Client;
+namespace VAAI.Library;
 
-internal class AudioClient
+public class AudioClient
 {
     private readonly HubClient Client;
     private readonly int SampleRate;
@@ -48,13 +47,14 @@ internal class AudioClient
         Channels = channels;
     }
 
-    public async Task RecordMicrophoneAsync()
+    public async Task RecordMicrophoneAsync(CancellationToken cancellationToken = default)
     {
         using var waveIn = new WaveInEvent();
         waveIn.WaveFormat = new WaveFormat(SampleRate, Channels);
 
         waveIn.DataAvailable += async (sender, args) =>
         {
+            if (cancellationToken.IsCancellationRequested) return;
             // Copy buffer to prevent overwrite
             var buffer = new byte[args.BytesRecorded];
             Array.Copy(args.Buffer, buffer, args.BytesRecorded);
@@ -69,16 +69,23 @@ internal class AudioClient
         };
 
         waveIn.StartRecording();
+        Logger.LogInformation("Audio recording was started.");
 
-        await Task.Delay(-1);
-
-        waveIn.StopRecording();
+        try
+        {
+            await Task.Delay(-1, cancellationToken);
+        }
+        catch (TaskCanceledException)
+        {
+            waveIn.StopRecording();
+            Logger.LogInformation("Audio recording was stopped.");
+        }
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        await Client.StartAsync();
+        await Client.StartAsync(cancellationToken);
 
-        _ = Task.Run(RecordMicrophoneAsync, cancellationToken);
+        _ = Task.Run(async () => await RecordMicrophoneAsync(cancellationToken));
     }
 }

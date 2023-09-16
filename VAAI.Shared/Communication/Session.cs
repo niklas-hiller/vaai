@@ -1,24 +1,16 @@
-﻿namespace VAAI.Shared.Communication;
+﻿using System.Text.Json.Serialization;
+
+namespace VAAI.Shared.Communication;
 
 public class Session
 {
-    public string Name { get; set; }
-    public string[] Groups { get; set; }
+    public string Name { get; set; } = "";
+    public string[] Groups { get; set; } = Array.Empty<string>();
 
-    public Session()
-    {
-        Name = "";
-        Groups = Array.Empty<string>();
-    }
-
+    [JsonConstructor]
     public Session(string name, string[] groups)
-    {
-        Name = name;
-        Groups = groups;
-    }
+        => (Name, Groups) = (name, groups);
 
     public override string ToString()
-    {
-        return $"{Name} ({string.Join(", ", Groups)})";
-    }
+        => $"{Name} ({string.Join(", ", Groups)})";
 }

@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using VAAI.Library;
 
-namespace VAAI.Client;
+namespace VAAI.Discord;
 
-internal class CoreClient
+internal class DiscordClient
 {
     private readonly ILogger logger;
     private readonly AudioClient AudioClient;
 
-    public CoreClient()
+    public DiscordClient()
     {
         using var loggerFactory = LoggerFactory.Create(builder =>
         {
@@ -17,7 +17,7 @@ internal class CoreClient
                 .AddFilter("System", LogLevel.Warning)
                 .AddConsole();
         });
-        logger = loggerFactory.CreateLogger<CoreClient>();
+        logger = loggerFactory.CreateLogger<DiscordClient>();
 
         this.AudioClient = new AudioClient(16000, 1);
     }

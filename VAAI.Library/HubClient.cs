@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 using VAAI.Shared.Communication;
 using VAAI.Shared.Enums;
 
 namespace VAAI.Library;
 
-public class HubClient
+public class HubClient : IAsyncDisposable
 {
     public HubConnection Connection { get; set; }
     private string Name { get; set; }
@@ -41,9 +40,7 @@ public class HubClient
     public TaskQueue<T1, T2> RegisterProcessor<T1, T2>(EProcessor processor)
     {
         if (IsActive)
-        {
             throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
-        }
 
         var sessionGroup = processor.ToGroup();
         if (Groups.Contains(sessionGroup))
@@ -69,9 +66,7 @@ public class HubClient
     public Listener RegisterListener()
     {
         if (IsActive)
-        {
             throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
-        }
 
         if (!Groups.Contains(SessionGroups.Listener))
         {
@@ -85,9 +80,7 @@ public class HubClient
     public Invoker RegisterInvoker()
     {
         if (IsActive)
-        {
             throw new NotSupportedException($"You can't call functions of a active Hub Client with active Connection.");
-        }
 
         if (!Groups.Contains(SessionGroups.Invoker))
         {
@@ -98,22 +91,38 @@ public class HubClient
         return new Invoker(this);
     }
 
-    public async Task StartAsync()
+    public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         _ = Task.Run(async () =>
         {
             var session = new Session(this.Name, this.Groups.ToArray());
-            logger.LogInformation($"Establishing connection to Hub as {session.Name} ({string.Join(", ", session.Groups)}).");
+            logger.LogInformation($"Establishing connection to Hub as {session}).");
 
             await Connection.StartAsync();
             await Connection.SendAsync(Broadcasts.SessionConnect, session);
 
-            await Task.Delay(-1);
-        });
+            try
+            {
+                await Task.Delay(-1, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                logger.LogInformation($"Cancelling connection to Hub as {session}).");
+                await Connection.StopAsync();
+            }
+
+        }, cancellationToken);
 
         while (!IsActive)
         {
             await Task.Delay(10);
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Connection.StopAsync();
+        await Connection.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
 }

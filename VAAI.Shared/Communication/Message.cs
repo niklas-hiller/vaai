@@ -8,14 +8,9 @@ public class Message<T>
     public T Content { get; set; }
 
     public Message(T content)
-    {
-        Content = content;
-    }
+        => Content = content;
 
     [JsonConstructor]
     public Message(Guid id, T content)
-    {
-        Id = id;
-        Content = content;
-    }
+        => (Id, Content) = (id, content);
 }
