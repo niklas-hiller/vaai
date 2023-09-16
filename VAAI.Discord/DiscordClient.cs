@@ -1,12 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
-using VAAI.Library;
+﻿using Discord;
+using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace VAAI.Discord;
 
 internal class DiscordClient
 {
     private readonly ILogger logger;
-    private readonly AudioClient AudioClient;
+
+    public readonly DiscordSocketClient client = new DiscordSocketClient();
+
+    private readonly IConfigurationRoot config;
 
     public DiscordClient()
     {
@@ -19,16 +24,32 @@ internal class DiscordClient
         });
         logger = loggerFactory.CreateLogger<DiscordClient>();
 
-        this.AudioClient = new AudioClient(16000, 1);
+        config = new ConfigurationBuilder()
+            .AddUserSecrets<DiscordClient>()
+            .Build();
+    }
+
+    private Task Log(LogMessage msg)
+    {
+        logger.LogInformation(msg.ToString());
+        return Task.CompletedTask;
     }
 
     public async Task StartAsync()
     {
         logger.LogInformation("Starting Application...");
 
-        var tokenSource = new CancellationTokenSource();
+        client.Log += Log;
 
-        await AudioClient.StartAsync(tokenSource.Token);
+        #region Login
+        var token = config.GetValue<string>("token");
+        if (token is null)
+        {
+            throw new ArgumentNullException(nameof(token));
+        }
+        await client.LoginAsync(TokenType.Bot, token);
+        #endregion
+        await client.StartAsync();
 
         await Task.Delay(-1);
     }
