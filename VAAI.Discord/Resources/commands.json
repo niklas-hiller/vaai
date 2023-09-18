@@ -1,0 +1,10 @@
+{
+  "connect": {
+    "name": "connect",
+    "description": "connect.description"
+  },
+  "disconnect": {
+    "name": "disconnect",
+    "description": "disconnect.description"
+  }
+}

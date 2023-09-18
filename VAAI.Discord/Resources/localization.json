@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "en-US": "connect",
+    "de": "verbinden"
+  },
+  "connect.description": {
+    "en-US": "Connect the assistant with your current voice channel.",
+    "de": "Verbinde den Assistenten mit deinem aktuellen Sprachkanal."
+  },
+  "disconnect": {
+    "en-US": "disconnect",
+    "de": "trennen"
+  },
+  "disconnect.description": {
+    "en-US": "Disconnect the assistant from it's current voice channel.",
+    "de": "Trenne den Assistenten von seinem aktuellen Sprachkanal."
+  }
+}

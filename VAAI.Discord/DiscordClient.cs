@@ -2,27 +2,22 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using VAAI.Discord.Handler;
 
 namespace VAAI.Discord;
 
 internal class DiscordClient
 {
     private readonly ILogger logger;
-
-    public readonly DiscordSocketClient client = new DiscordSocketClient();
-
+    private readonly DiscordSocketClient client;
+    private readonly ICommandHandler command;
     private readonly IConfigurationRoot config;
 
-    public DiscordClient()
+    public DiscordClient(ILogger<DiscordClient> logger, DiscordSocketClient client, ICommandHandler command)
     {
-        using var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder
-                .AddFilter("Microsoft", LogLevel.Warning)
-                .AddFilter("System", LogLevel.Warning)
-                .AddConsole();
-        });
-        logger = loggerFactory.CreateLogger<DiscordClient>();
+        this.logger = logger;
+        this.client = client;
+        this.command = command;
 
         config = new ConfigurationBuilder()
             .AddUserSecrets<DiscordClient>()
@@ -35,11 +30,17 @@ internal class DiscordClient
         return Task.CompletedTask;
     }
 
+    private async Task Ready()
+    {
+        await command.Initialize();
+    }
+
     public async Task StartAsync()
     {
         logger.LogInformation("Starting Application...");
 
         client.Log += Log;
+        client.Ready += Ready;
 
         #region Login
         var token = config.GetValue<string>("token");
